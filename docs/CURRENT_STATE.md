@@ -4,6 +4,7 @@ Last Updated: 2026-09-09.
 
 ## Completed
 
+- Refreshed README with architecture, review-workflow and model-job sequence diagrams, module/role tables, repository tree and explicit implementation status; removed a corrupted duplicate trailing title.
 - Inspected both supplied master prompt files and adopted MASTER_PROJECT_PROMPT_SIH26018.md as the new capability baseline.
 - Replaced the earlier generated documentation with a Next.js frontend/backend, PostgreSQL/PostGIS and external model API design.
 - Added explicit requirements, modular folder ownership, model contract and phase plan.
