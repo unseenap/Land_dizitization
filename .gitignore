@@ -1,0 +1,17 @@
+# Dependencies and build output
+node_modules/
+.next/
+out/
+dist/
+coverage/
+test-results/
+playwright-report/
+
+# Local credentials and runtime data
+.env
+.env.*
+!.env.example
+.local-storage/
+.local-data/
+*.log
+*.tsbuildinfo
