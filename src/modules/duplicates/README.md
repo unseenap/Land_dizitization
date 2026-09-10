@@ -1,6 +1,6 @@
 # duplicates module
 
-Status: design boundary only; no runtime implementation.
+Status: Phase 4 implemented. Scoped candidate signals and audited human resolution are available.
 
 ## Ownership
 

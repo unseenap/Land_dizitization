@@ -341,3 +341,59 @@ export const processingJobHistory = pgTable("processing_job_history", {
     .notNull()
     .defaultNow(),
 });
+
+export const extractionRuns = pgTable("extraction_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  jobId: uuid("job_id").notNull().references(() => processingJobs.id),
+  artifactId: uuid("artifact_id").notNull().references(() => processingArtifacts.id),
+  documentId: uuid("document_id").notNull().references(() => documents.id),
+  departmentId: uuid("department_id").notNull().references(() => departments.id),
+  schemaVersionId: uuid("schema_version_id").notNull().references(() => documentSchemaVersions.id),
+  documentRevision: integer("document_revision").notNull(),
+  status: text("status").notNull(),
+  blockerCount: integer("blocker_count").notNull().default(0),
+  duplicateCount: integer("duplicate_count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const extractionFields = pgTable("extraction_fields", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => extractionRuns.id),
+  fieldKey: text("field_key").notNull(),
+  label: text("label").notNull(),
+  fieldType: text("field_type").notNull(),
+  required: boolean("required").notNull(),
+  critical: boolean("critical").notNull(),
+  sourceValue: jsonb("source_value").notNull(),
+  normalizedValue: jsonb("normalized_value"),
+  confidence: doublePrecision("confidence"),
+  missingReason: text("missing_reason"),
+  evidence: jsonb("evidence").notNull().default([]),
+});
+
+export const validationFindings = pgTable("validation_findings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => extractionRuns.id),
+  fieldKey: text("field_key"),
+  code: text("code").notNull(),
+  status: text("status").notNull(),
+  severity: text("severity").notNull(),
+  message: text("message").notNull(),
+  details: jsonb("details").notNull().default({}),
+  source: text("source").notNull(),
+});
+
+export const duplicateCandidates = pgTable("duplicate_candidates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => extractionRuns.id),
+  documentId: uuid("document_id").notNull().references(() => documents.id),
+  candidateDocumentId: uuid("candidate_document_id").notNull().references(() => documents.id),
+  score: doublePrecision("score").notNull(),
+  signals: jsonb("signals").notNull().default([]),
+  status: text("status").notNull().default("PENDING"),
+  resolutionReason: text("resolution_reason"),
+  resolvedBy: uuid("resolved_by").references(() => users.id),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

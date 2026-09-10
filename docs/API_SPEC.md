@@ -1,6 +1,6 @@
 # Next.js application API
 
-Base /api/v1 uses Next.js Route Handlers. Phases 1 and 2 implement identity, audit, master-data, document-type and document intake endpoints. Phase 3 adds processing submission and status endpoints backed by durable jobs and a server-only model adapter. Later workflow endpoints remain proposed; the default model adapter is a labelled no-inference mock.
+Base /api/v1 uses Next.js Route Handlers. Phases 1 and 2 implement identity, audit, master-data, document-type and document intake endpoints. Phase 3 adds processing submission and status endpoints backed by durable jobs and a server-only model adapter. Phase 4 adds scoped extraction/validation reads and audited duplicate resolution. Later workflow endpoints remain proposed; the default model adapter is a labelled no-inference mock.
 
 Current payloads use camelCase: user creation accepts name, email, password, role, scopeIds; access updates accept expectedRevision, active, role, scopeIds. Login returns csrfToken; /auth/me returns user and csrfToken. Send X-CSRF-Token and matching Origin on authenticated mutations. Paginated user/document/audit collections use fixed page_size 25. Later workflow examples below are proposed contracts, not currently callable endpoints.
 
@@ -22,6 +22,8 @@ Current payloads use camelCase: user creation accepts name, email, password, rol
 | GET /documents/{id}/history | `{metadata,status}` with immutable revisions, reasons, actors and timestamps |
 | POST /documents/{id}/process | `{tasks?,languageHints?,requestedModelVersion?}`; authorized operator/admin; 202 with durable job summary; idempotent for document revision |
 | GET /documents/{id}/processing | Scoped latest job with status, attempts, artifacts and immutable job history |
+| GET /documents/{id}/validation | Scoped extraction fields, evidence, findings, blockers and duplicate candidates |
+| POST /duplicates/{id}/resolve | `{decision,reason}`; verifier/admin only; CSRF protected; records audited decision |
 
 Upload metadata is `{title,villageId,schemaVersionId,language?,reference?,notes?}`. `villageId` is required, `schemaVersionId` is a version UUID or null. The department/uploader come from the session. Successful upload returns 201 `{document,reused:false}`; an identical retry under the same user's key returns 200 `{document,reused:true}`. Changed content under the same key returns 409. This does not deduplicate independently uploaded identical files.
 
@@ -56,10 +58,8 @@ Use expected_revision for draft/review changes; stale updates return 409. Proces
 | POST /processing/jobs/{id}/retry | Authorized failed-job retry |
 | GET /extractions/{id} | Accepted structured candidate result/evidence |
 | GET /documents/{id}/ocr | Original OCR blocks/run history |
-| GET /validations?document_id=... | Versioned findings |
-| POST /validations/{id}/resolve | Allowed officer resolution/reason |
-| GET /documents/{id}/duplicates | Scoped candidate signals |
-| POST /duplicates/{id}/resolve | Officer confirms/dismisses with reason |
+| GET /documents/{id}/validation | Implemented in Phase 4 |
+| POST /duplicates/{id}/resolve | Implemented in Phase 4 |
 | GET /verifications; GET /verifications/{id} | Queue/task/current revision |
 | POST /verifications/{id}/claim | Atomic assignment, expected revision |
 | PATCH /verifications/{id}/fields | Typed changes/reasons; invalidate affected approvals |

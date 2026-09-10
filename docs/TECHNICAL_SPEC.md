@@ -2,7 +2,7 @@
 
 ## Implemented scope
 
-Phase 1 implements identity, scoped user management, audit, configuration and error handling. Phase 2 adds administrative hierarchy, versioned document types, private upload/storage/preview/download, descriptive metadata and history. Phase 3 adds durable processing jobs/outbox, a server-only model API adapter, strict result validation, immutable artifacts and the worker loop. PHASE_1.md, PHASE_2.md and PHASE_3.md record the implemented boundaries; extraction validation and later workflows remain target behavior.
+Phase 1 implements identity, scoped user management, audit, configuration and error handling. Phase 2 adds administrative hierarchy, versioned document types, private upload/storage/preview/download, descriptive metadata and history. Phase 3 adds durable processing jobs/outbox, a server-only model API adapter, strict result validation, immutable artifacts and the worker loop. Phase 4 adds evidence-preserving extraction runs, normalization, application validation, duplicate candidates and audited human duplicate resolution. PHASE_1.md through PHASE_4.md record the implemented boundaries; verification/approval and later workflows remain target behavior.
 
 Current roles are seeded configuration with fixed permission codes. Administrators assign one role and one or more jurisdictions to each account. Districts map these scopes to state/tehsil/village hierarchy. Full role-definition editing and password reset/rotation UI are pending. User access edits revoke every active session and reject stale revisions; self-access changes require another administrator.
 

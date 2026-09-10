@@ -13,6 +13,7 @@ import {
 import { appendAudit } from "@/modules/audit/server/writer";
 import { scopedIds } from "@/modules/master-data/server/service";
 import type { Actor } from "@/modules/identity/contracts";
+import { fieldsSchema } from "@/modules/document-types/contracts";
 import {
   modelRequestSchema,
   modelResultSchema,
@@ -21,6 +22,7 @@ import {
   type ModelResult,
   type ProcessingJobSummary,
 } from "../contracts";
+import { ingestExtractionRun } from "@/modules/validation/server/service";
 
 const jobColumns = sql`j.id,j.document_id AS "documentId",j.document_revision AS "documentRevision",j.input_sha256 AS "inputSha256",j.status,j.stage,j.attempt,j.max_attempts AS "maxAttempts",j.remote_job_id AS "remoteJobId",j.provider,j.model_name AS "modelName",j.model_version AS "modelVersion",j.prompt_version AS "promptVersion",j.error_code AS "errorCode",j.error_message AS "errorMessage",j.retryable,j.created_at AS "createdAt",j.updated_at AS "updatedAt",j.completed_at AS "completedAt"`;
 
@@ -165,7 +167,7 @@ export async function ingestModelResult(jobId: string, raw: unknown) {
   const payload = raw && typeof raw === "object" ? raw : { value: raw };
   const payloadHash = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
   return getDb().transaction(async (tx) => {
-    const result = await tx.execute(sql`SELECT j.*,d.revision AS current_revision,d.sha256 AS current_sha256,d.page_count,sv.version AS current_schema_version,dt.code AS current_schema_id,sv.json_schema FROM processing_jobs j JOIN documents d ON d.id=j.document_id LEFT JOIN document_schema_versions sv ON sv.id=j.schema_version_id LEFT JOIN document_types dt ON dt.id=sv.type_id WHERE j.id=${jobId} FOR UPDATE OF j`);
+    const result = await tx.execute(sql`SELECT j.*,d.revision AS current_revision,d.sha256 AS current_sha256,d.page_count,d.department_id,d.village_id,sv.id AS current_schema_version_id,sv.version AS current_schema_version,dt.code AS current_schema_id,sv.json_schema,sv.fields,s.name AS state_name,di.name AS district_name,t.name AS tehsil_name,v.name AS village_name FROM processing_jobs j JOIN documents d ON d.id=j.document_id LEFT JOIN document_schema_versions sv ON sv.id=j.schema_version_id LEFT JOIN document_types dt ON dt.id=sv.type_id JOIN villages v ON v.id=d.village_id JOIN tehsils t ON t.id=v.tehsil_id JOIN districts di ON di.id=t.district_id JOIN states s ON s.id=di.state_id WHERE j.id=${jobId} FOR UPDATE OF j`);
     if (!result.rows.length) throw new AppError(404, "NOT_FOUND", "Processing job not found.");
     const job = result.rows[0] as Record<string, unknown>;
     const reject = async (code: string, message: string) => {
@@ -189,9 +191,27 @@ export async function ingestModelResult(jobId: string, raw: unknown) {
     if (unknown) return reject("MODEL_FIELD_NOT_ALLOWED", `The model returned an unknown field: ${unknown}.`);
     if (value.pages.some((page) => page.page > Number(job.page_count)))
       return reject("MODEL_PAGE_OUT_OF_RANGE", "The model returned evidence for a page that does not exist.");
-    await tx.execute(sql`INSERT INTO processing_artifacts(job_id,kind,accepted,payload,sha256) VALUES(${jobId},'model_result',true,${JSON.stringify(value)}::jsonb,${payloadHash})`);
+    const artifact = await tx.execute(sql`INSERT INTO processing_artifacts(job_id,kind,accepted,payload,sha256) VALUES(${jobId},'model_result',true,${JSON.stringify(value)}::jsonb,${payloadHash}) RETURNING id`);
     await tx.execute(sql`UPDATE processing_jobs SET status='SUCCEEDED',stage='COMPLETED',provider=${value.model.provider},model_name=${value.model.name},model_version=${value.model.version},prompt_version=${value.model.prompt_version},updated_at=now(),completed_at=now(),error_code=NULL,error_message=NULL,retryable=NULL WHERE id=${jobId}`);
     await tx.execute(sql`INSERT INTO processing_job_history(job_id,from_status,to_status,stage,reason) VALUES(${jobId},${String(job.status)},'SUCCEEDED','COMPLETED','Validated model result ingested')`);
+    await ingestExtractionRun(tx, {
+      jobId,
+      artifactId: String(artifact.rows[0].id),
+      result: value,
+      document: {
+        id: String(job.document_id),
+        departmentId: String(job.department_id),
+        schemaVersionId: String(job.current_schema_version_id),
+        documentRevision: Number(job.document_revision),
+        fields: fieldsSchema.parse(job.fields ?? []),
+        hierarchy: {
+          state: String(job.state_name),
+          district: String(job.district_name),
+          tehsil: String(job.tehsil_name),
+          village: String(job.village_name),
+        },
+      },
+    });
     await tx.execute(sql`UPDATE documents SET status='MODEL_COMPLETED' WHERE id=${job.document_id}`);
     return { accepted: true as const, result: value };
   });

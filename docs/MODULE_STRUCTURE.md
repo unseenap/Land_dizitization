@@ -1,6 +1,6 @@
 # Modular project structure
 
-Implemented modules: identity, audit, master-data, document-types and documents, with Next.js routes, server-only services, safe contracts, UI, migrations and tests. Private local storage and bounded file inspection are shared infrastructure. Other module folders remain design boundaries. The tree below describes the full target layout; PHASE_2.md lists current functionality.
+Implemented modules: identity, audit, master-data, document-types, documents, processing, validation and duplicates, with Next.js routes, server-only services, safe contracts, UI, migrations and tests. Private local storage and bounded file inspection are shared infrastructure. Other module folders remain design boundaries. The tree below describes the full target layout; PHASE_4.md lists the current extraction/validation boundary.
 
 ## Application layout
 

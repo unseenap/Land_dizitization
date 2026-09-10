@@ -8,6 +8,8 @@ SQL grants keep land_app separate from the migration owner. Runtime cannot creat
 
 Phase 3 migrations `0003_processing.sql` and `0004_processing_permissions.sql` add `processing_jobs`, `processing_attempts`, `processing_outbox`, `processing_artifacts` and `processing_job_history`. The application worker uses these tables for durable submit/poll/ingest and preserves rejected model payloads as diagnostic artifacts.
 
+Phase 4 migration `0006_phase4_validation.sql` adds immutable `extraction_runs`, `extraction_fields` and `validation_findings`, plus `duplicate_candidates` for scoped signals and audited human resolution.
+
 ## Tables by module
 
 | Module | Tables and main relationships |
@@ -17,8 +19,8 @@ Phase 3 migrations `0003_processing.sql` and `0004_processing_permissions.sql` a
 | document-types | document_types(code, name); document_schema_versions(type_id, version, JSON schema, required/critical fields), unique type/version |
 | documents | documents(department_id, uploader_id, village_id nullable, status, revision, original_key, MIME, byte_size, sha256); document_metadata(document_id, version, schema-bound JSONB); document_pages(document_id, page_number, dimensions, derived_key, transform); document_status_history |
 | processing | processing_jobs(document_id, revision, request/payload hashes, status, remote job/model metadata); processing_attempts(job_id, operation, attempt, status, remote ID, error); processing_outbox(job_id, submit/poll event, availability and lock); processing_artifacts(job_id, accepted/rejected payload and hash); processing_job_history(job_id, status/stage transitions) |
-| validation | validation_rules(code, version, severity, configuration); validation_results(review_revision_id or extraction_result_id, rule_id, field_path, status, source, expected/actual, resolution) |
-| duplicates | duplicate_matches(document_revision, candidate_record_version_id or candidate_document_id, signals, score, state, resolved_by, reason) |
+| validation | extraction_runs(job/artifact/document/schema/revision/status/blockers); extraction_fields(run_id, source/normalized values, confidence, evidence); validation_findings(run_id, field/rule/status/severity/message/source) |
+| duplicates | duplicate_candidates(run_id, document/candidate IDs, score, signals, status, resolution reason/actor/time) |
 | verification | review_revisions(document_id, base_extraction_id, revision, values); verification_tasks(document_id, submitted_revision, assignee, state); verification_actions(task_id, action, actor, reason, timestamp); field_decisions(task_id, revision, field_path, decision); field_corrections(task_id, field_path, old/new, source, reason) |
 | land-records | land_records(department_id, current_approved_version_id); land_record_versions(record_id, version, document_id, review_revision_id, approved_snapshot, approver, timestamp); landowners(version_id, name, relationship, ownership); mutation_records(version_id, number, date, details); registration_records(version_id, number, date, details) |
 | gis | gis_sources(provenance, source_crs, mock/live); gis_parcels(source_id, village_id, survey_number, geometry, source_area/unit); record_parcel_links(record_version_id, parcel_id, status, reviewer, reason); parcel_link_history |

@@ -1,6 +1,6 @@
 # validation module
 
-Status: design boundary only; no runtime implementation.
+Status: Phase 4 implemented. Evidence-aware extraction, normalization and validation findings are available.
 
 ## Ownership
 

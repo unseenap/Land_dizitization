@@ -12,6 +12,8 @@ import { PdfPreview } from "@/modules/documents/ui/pdf-preview";
 import { MetadataEditor } from "@/modules/documents/ui/metadata-editor";
 import { getProcessingJob } from "@/modules/processing/server/service";
 import { ProcessingControls } from "@/modules/processing/ui/processing-controls";
+import { getValidation } from "@/modules/validation/server/service";
+import { ValidationPanel } from "@/modules/validation/ui/validation-panel";
 export default async function DocumentPage({
   params,
 }: {
@@ -26,6 +28,9 @@ export default async function DocumentPage({
   const history = await getDocumentHistory(token, id);
   const processing = actor.permissions.includes("processing.read")
     ? await getProcessingJob(token, id)
+    : null;
+  const validation = actor.permissions.includes("processing.read")
+    ? await getValidation(token, id)
     : null;
   return (
     <>
@@ -130,6 +135,13 @@ export default async function DocumentPage({
           </p>
         ))}
       </section>
+      {validation && (
+        <ValidationPanel
+          validation={validation}
+          csrfToken={csrfToken(token!)}
+          canResolveDuplicates={actor.permissions.includes("duplicates.resolve")}
+        />
+      )}
     </>
   );
 }

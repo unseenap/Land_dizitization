@@ -28,14 +28,19 @@ Last Updated: 2026-09-11.
 - Server-only versioned model contract with strict mock and HTTP adapters; results are checked for identity, revision, input hash, schema, field keys, evidence pages/bounds and confidence ranges.
 - Processing submission/status APIs, document processing controls and a TypeScript worker for durable submit/poll/ingest.
 - Processing tests cover idempotent submission, worker submit/poll ingestion, accepted artifacts and malformed-result quarantine.
+- Phase 4 evidence-aware extraction runs preserve model source values, normalized values, confidence and page/block evidence.
+- Application validation records required-field, type, positive-area, confidence and administrative-hierarchy findings with explicit blocking severity.
+- Scoped duplicate candidates store source-hash, survey, owner, area and location signals; authorized verifiers/administrators can resolve candidates with audit history.
+- Document detail exposes extraction, validation findings, blockers and duplicate review; validation and duplicate-resolution APIs are available.
+- Final verification: all 24 PostgreSQL integration tests and all 6 Chrome E2E scenarios passed. Production build, TypeScript, ESLint and the client-build secret scan passed for the Phase 4 implementation.
 
 ## Working
 
-Phases 1, 2 and 3 complete. Phase 4 and later remain pending.
+Phases 1, 2, 3 and 4 complete. Phase 5 and later remain pending.
 
 ## Pending
 
-Phase 4: evidence-aware extraction output, normalization, business/master-data validation and duplicate matching.
+Phase 5: split viewer, field decisions, corrections, return/edit workflow and auditable final approval.
 
 Later: record verification/approval, immutable land-record versions/search, PostGIS/parcel linking, government adapters, processing dashboards and feedback/evaluation.
 
@@ -48,12 +53,13 @@ Later: record verification/approval, immutable land-record versions/search, Post
 - Uploaded source documents are supported; only fictional local fixtures have been used for verification. The default mock model performs no inference, and no extraction accuracy or government connection is claimed.
 - Phase 2 storage is local/persistent only; no S3 adapter or ephemeral/multi-instance filesystem support. Antivirus/quarantine, OS parser isolation, crash-orphan reconciliation, encryption and backup restore verification remain production work. See PHASE_2.md for exact limits.
 - PDF/JPEG/PNG/single-page TIFF are accepted. Processing uses the mock adapter by default; a real OCR service requires HTTP model configuration and authorized input transfer. Pinned schema/location cannot be changed through the metadata editor.
+- Phase 4 normalization and duplicate policies are deterministic application defaults, not jurisdiction-certified rules. Fuzzy/transliteration matching and configurable rule administration remain future work.
 - Windows local DB needs PostgreSQL command-line tools in PATH. The browser tests use installed Chrome.
 - Browser tests create and deactivate synthetic test accounts; their audit history is intentionally retained in the local demo database. Integration tests use a separate temporary database.
 
 ## Important decisions
 
-Next.js owns frontend and backend. Domain services remain server-only and callable from authorized server pages or API routes. The separately hosted model is not installed in this project. Drizzle owns runtime relational access; checksum-tracked reviewed SQL migrations own schema changes. Phase 3 uses the PostgreSQL outbox worker; pg-boss remains a future queue option.
+Next.js owns frontend and backend. Domain services remain server-only and callable from authorized server pages or API routes. The separately hosted model is not installed in this project. Drizzle owns runtime relational access; checksum-tracked reviewed SQL migrations own schema changes. Phase 3 uses the PostgreSQL outbox worker; pg-boss remains a future queue option. Phase 4 preserves model artifacts and extraction evidence immutably while keeping human duplicate decisions auditable.
 
 Local credentials live only in ignored .env.local and .local-data/demo-accounts.json. Migrations/seeds/tests use MIGRATION_DATABASE_URL; the app uses DATABASE_URL with restricted land_app credentials. Production should not inject the owner credential into the web process.
 
@@ -65,4 +71,4 @@ Departments/accounts are explicitly synthetic. The mock model adapter is impleme
 
 1. Align `docs/MODEL_API_CONTRACT.md` and shared fixtures with the independently developed OCR service.
 2. Configure authorized cross-host input delivery and run the worker against the real model in a controlled environment.
-3. Begin Phase 4 extraction evidence, normalization, validation and duplicate matching.
+3. Begin Phase 5 field-level verification, corrections and auditable approval.

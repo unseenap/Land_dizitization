@@ -40,6 +40,8 @@ import {
   ingestModelResult,
 } from "../src/modules/processing/server/service";
 import { runProcessingOnce } from "../src/modules/processing/server/worker";
+import { getValidation } from "../src/modules/validation/server/service";
+import { resolveDuplicate } from "../src/modules/duplicates/server/service";
 const suffix = randomBytes(8).toString("hex"),
   dbName = `land_docs_test_${suffix}`,
   accountFile = `.local-data/test-accounts-${suffix}.json`,
@@ -48,6 +50,7 @@ let owner: Pool,
   control: Pool,
   admin: string,
   operator: string,
+  verifier: string,
   north: string,
   external: string,
   otherOperator: string,
@@ -97,6 +100,7 @@ before(async () => {
       .token;
   admin = await sign("admin@demo.land");
   operator = await sign("operator@demo.land");
+  verifier = await sign("verifier@demo.land");
   north = await sign("north.admin@demo.land");
   external = await sign("external.admin@demo.land");
   const tree = await getMasterData(operator);
@@ -574,4 +578,147 @@ test("malformed model results are quarantined and cannot complete a job", async 
   const detail = await getProcessingJob(operator, uploaded.document.id);
   assert.equal(detail?.job.status, "RESULT_REJECTED");
   assert.equal(detail?.artifacts[0].accepted, false);
+});
+
+test("phase 4 normalizes evidence-aware fields, validates master data and resolves duplicates", async () => {
+  const phaseVillageName = (await getMasterData(operator)).villages.find(
+    (village) => village.id === villageId,
+  )!.name;
+  const phaseType = await createType(admin, {
+    code: "phase4-record",
+    name: "Phase 4 Land Record",
+    reason: "Synthetic Phase 4 validation fixture",
+    fields: [
+      { key: "owner_name", label: "Owner name", type: "text", required: true, critical: true },
+      { key: "survey_number", label: "Survey number", type: "text", required: true, critical: true },
+      { key: "area", label: "Area", type: "number", required: true, critical: false },
+      { key: "registration_date", label: "Registration date", type: "date", required: false, critical: false },
+      { key: "is_mutated", label: "Mutated", type: "boolean", required: false, critical: false },
+      { key: "village", label: "Village", type: "text", required: true, critical: false },
+    ],
+  }, randomUUID());
+  const phaseSchemaId = (await listTypes(admin)).find((type) => type.id === phaseType.id)!.schemaVersionId;
+  const phaseMetadata = () => ({
+    ...metadata(),
+    schemaVersionId: phaseSchemaId,
+    language: "English, Hindi",
+  });
+
+  async function ingestFixture(documentId: string) {
+    const queued = await submitProcessing(
+      operator,
+      documentId,
+      { tasks: ["ocr", "extract"], languageHints: ["en", "hi"] },
+      randomUUID(),
+    );
+    await control.query("UPDATE processing_jobs SET remote_job_id=$1 WHERE id=$2", [
+      `fixture-${documentId}`,
+      queued.job.id,
+    ]);
+    const job = (
+      await control.query(
+        `SELECT j.request_id,j.input_sha256,j.document_revision,sv.version,dt.code
+         FROM processing_jobs j
+         JOIN document_schema_versions sv ON sv.id=j.schema_version_id
+         JOIN document_types dt ON dt.id=sv.type_id
+         WHERE j.id=$1`,
+        [queued.job.id],
+      )
+    ).rows[0];
+    const result = await ingestModelResult(queued.job.id, {
+      contract_version: "1.0",
+      request_id: job.request_id,
+      job_id: `fixture-${documentId}`,
+      document_id: documentId,
+      document_revision: job.document_revision,
+      input_sha256: job.input_sha256,
+      schema_id: job.code,
+      schema_version: job.version,
+      model: {
+        provider: "synthetic-fixture",
+        name: "contract-fixture",
+        version: "fixture-v1",
+        prompt_version: "phase4-test",
+      },
+      languages: ["en", "hi"],
+      classification: { document_type: job.code, confidence: 0.99 },
+      pages: [{
+        page: 1,
+        width: 1000,
+        height: 1400,
+        ocr_text: "Asha Devi SYN/001 1,250.50",
+        blocks: [{ id: "owner", text: "Asha Devi", bbox: [0.1, 0.2, 0.4, 0.25], confidence: 0.96 }],
+      }],
+      fields: {
+        owner_name: {
+          value: "  Asha   Devi ",
+          confidence: 0.96,
+          missing_reason: null,
+          evidence: [{ page: 1, block_ids: ["owner"], bbox: [0.1, 0.2, 0.4, 0.25], source_text: "Asha Devi" }],
+        },
+        survey_number: { value: "syn/001", confidence: 0.95, missing_reason: null, evidence: [] },
+        area: { value: "1,250.50", confidence: 0.93, missing_reason: null, evidence: [] },
+        registration_date: { value: "2026-01-15", confidence: 0.9, missing_reason: null, evidence: [] },
+        is_mutated: { value: true, confidence: 0.88, missing_reason: null, evidence: [] },
+        village: { value: phaseVillageName, confidence: 0.97, missing_reason: null, evidence: [] },
+      },
+      warnings: [],
+      timing: { processing_ms: 12 },
+    });
+    assert.equal(result.accepted, true);
+    return queued.job.id;
+  }
+
+  const first = await uploadDocument(
+    operator,
+    { name: "phase4-first.pdf", type: "application/pdf", bytes: pdf },
+    phaseMetadata(),
+    randomUUID(),
+    randomUUID(),
+  );
+  await ingestFixture(first.document.id);
+  const firstValidation = await getValidation(operator, first.document.id);
+  assert.equal(firstValidation.run?.status, "VALIDATED");
+  assert.equal(firstValidation.run.blockerCount, 0);
+  const byKey = new Map(firstValidation.fields.map((field) => [field.fieldKey, field]));
+  assert.equal(byKey.get("owner_name")?.sourceValue, "  Asha   Devi ");
+  assert.equal(byKey.get("owner_name")?.normalizedValue, "Asha Devi");
+  assert.equal(byKey.get("area")?.sourceValue, "1,250.50");
+  assert.equal(byKey.get("area")?.normalizedValue, 1250.5);
+  assert.equal(byKey.get("registration_date")?.normalizedValue, "2026-01-15");
+  assert.equal(byKey.get("is_mutated")?.normalizedValue, true);
+  assert.ok(byKey.get("owner_name")?.evidence[0]?.sourceText);
+  assert.ok(firstValidation.findings.some((finding) => finding.code === "MASTER_DATA_MATCH" && finding.fieldKey === "village"));
+
+  const second = await uploadDocument(
+    operator,
+    { name: "phase4-second.pdf", type: "application/pdf", bytes: pdf },
+    phaseMetadata(),
+    randomUUID(),
+    randomUUID(),
+  );
+  await ingestFixture(second.document.id);
+  const secondValidation = await getValidation(operator, second.document.id);
+  assert.equal(secondValidation.run?.status, "BLOCKED");
+  assert.ok(secondValidation.run.duplicateCount >= 1);
+  const candidate = secondValidation.duplicates[0];
+  assert.equal(candidate.candidateDocumentId, first.document.id);
+  assert.ok(candidate.signals.some((signal) => signal.code === "SAME_SOURCE_HASH"));
+  assert.ok(candidate.signals.some((signal) => signal.code === "SAME_SURVEY_NUMBER"));
+  assert.ok(secondValidation.findings.some((finding) => finding.code === "DUPLICATE_CANDIDATES_FOUND"));
+
+  await assert.rejects(
+    resolveDuplicate(operator, candidate.id, { decision: "RESOLVED_NOT_DUPLICATE", reason: "Operator cannot resolve." }, randomUUID()),
+    denied(403),
+  );
+  const resolved = await resolveDuplicate(
+    verifier,
+    candidate.id,
+    { decision: "RESOLVED_NOT_DUPLICATE", reason: "Reviewed source metadata and confirmed distinct records." },
+    randomUUID(),
+  );
+  assert.equal(resolved.status, "RESOLVED_NOT_DUPLICATE");
+  const afterResolution = await getValidation(verifier, second.document.id);
+  assert.equal(afterResolution.duplicates[0].status, "RESOLVED_NOT_DUPLICATE");
+  assert.equal(afterResolution.duplicates[0].resolutionReason, "Reviewed source metadata and confirmed distinct records.");
 });

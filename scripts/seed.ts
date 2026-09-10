@@ -92,9 +92,9 @@ export async function seed(accountFile = ".local-data/demo-accounts.json") {
         [department, code, name],
       );
     const grants: Record<string, string[]> = {
-      administrator: ["users.manage", "audit.read", "workspace.read", "processing.read", "processing.submit"],
+      administrator: ["users.manage", "audit.read", "workspace.read", "processing.read", "processing.submit", "duplicates.resolve"],
       operator: ["workspace.read", "processing.submit", "processing.read"],
-      verifier: ["workspace.read", "processing.read"],
+      verifier: ["workspace.read", "processing.read", "duplicates.resolve"],
       gis_officer: ["workspace.read"],
       supervisor: ["workspace.read", "audit.read", "processing.read"],
     };
