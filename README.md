@@ -14,7 +14,7 @@
 
 ---
 
-> **Application:** Phases 1 and 2 are implemented and verified. **OCR:** the team reports its trained models are ready in the independent model project. Application-to-model integration is next. Validation, approval, GIS and government exchange remain later phases.
+> **Application:** Phases 1, 2 and 3 are implemented and verified. **OCR:** the team reports its trained models are ready in the independent model project; connect them through the Phase 3 HTTP adapter. Validation, approval, GIS and government exchange remain later phases.
 
 ## Project overview
 
@@ -30,7 +30,7 @@ The goal is to reduce repetitive transcription while keeping officers responsibl
 | Document repository | Preserve originals, previews, metadata and history | Implemented |
 | Administrative hierarchy | Organize state → district → tehsil → village | Implemented |
 | Document-type schemas | Configure expected fields and retain schema versions | Implemented |
-| OCR-assisted capture | Recognize printed and handwritten source text | Separate models ready; application connection pending |
+| OCR-assisted capture | Recognize printed and handwritten source text | Separate model API boundary implemented; live OCR connection pending |
 | Structured extraction | Map recognized content to land-record fields | Planned |
 | Validation and duplicate review | Surface inconsistencies and candidate matches | Planned |
 | Officer verification | Review evidence, correct values and approve revisions | Planned |
@@ -56,8 +56,8 @@ flowchart TB
     end
     DB[("PostgreSQL<br/>Application data, versions and audit")]
     Storage["Private storage<br/>Originals and previews"]
-    Jobs["Planned: durable jobs and outbox"]
-    Worker["Planned: TypeScript job worker<br/>Versioned model adapter"]
+    Jobs["PostgreSQL durable jobs and outbox"]
+    Worker["TypeScript job worker<br/>Versioned model adapter"]
     Model["Independent OCR service<br/>Models ready, team reported"]
     Clients["Other authorized model clients"]
     GIS["Planned: PostGIS and parcel links"]
@@ -235,8 +235,8 @@ Current storage requires a persistent private single-host directory. Antivirus/q
 | Data access and migrations | Drizzle + reviewed SQL | Implemented |
 | Input and schema contracts | Zod + versioned JSON Schema | Implemented |
 | Source storage | Private local adapter | Implemented; shared/S3 adapter planned |
-| Model connection | Independent authenticated API | Required boundary; adapter pending |
-| Durable processing | PostgreSQL-backed jobs/outbox; pg-boss proposed | Planned |
+| Model connection | Independent authenticated API | Server-only mock/HTTP adapter implemented |
+| Durable processing | PostgreSQL-backed jobs/outbox; pg-boss proposed | Implemented in Phase 3 |
 | Spatial records and maps | PostGIS; Leaflet proposed | Planned |
 
 Installed versions are pinned in `package.json` and `package-lock.json`. The model's runtime and hardware are managed separately. PostGIS is not installed in the verified local environment.
@@ -247,7 +247,7 @@ Installed versions are pinned in `package.json` and `package-lock.json`. The mod
 |---|---|---|
 | 1 · Foundation | Next.js, PostgreSQL, identity/RBAC, audit and shared errors | Complete |
 | 2 · Documents | Schemas, master data, uploads, private previews and history | Complete |
-| 3 · Model connection | Durable jobs, contract alignment and OCR API adapter | Next |
+| 3 · Model connection | Durable jobs, contract alignment and OCR API adapter | Complete |
 | 4 · Quality | Structured extraction, validation and duplicate review | Planned |
 | 5 · Verification | Officer decisions, corrections and immutable approval | Planned |
 | 6 · Records | Approved versions, owners/mutations and scoped search | Planned |
@@ -257,7 +257,7 @@ Installed versions are pinned in `package.json` and `package-lock.json`. The mod
 | 10 · Feedback | Reviewed truth datasets and model evaluation | Planned |
 | 11 · Acceptance | Complete workflow verification and deployment | Planned |
 
-**Verified Phase 2 baseline:** 21 PostgreSQL integration tests and 6 Chrome browser scenarios passed. Build, TypeScript, lint and the configured-secret client scan passed. These results cover application behavior, not OCR accuracy or production certification.
+**Verified Phase 3 baseline:** 23 PostgreSQL integration tests passed, including durable processing submit/poll/ingest and malformed-result quarantine. Build, TypeScript and lint passed. The default mock adapter performs no OCR; these results cover application behavior, not extraction accuracy or production certification.
 
 No live government integration, measured end-to-end extraction accuracy or automated approval is claimed. OCR readiness refers to the team's separate model project. See [current application state](docs/CURRENT_STATE.md) and [implementation gates](docs/IMPLEMENTATION_PLAN.md).
 
@@ -286,7 +286,7 @@ Open [the local workspace](http://127.0.0.1:3000). Frontend and backend start to
 
 Generated passwords live only in ignored `.local-data/demo-accounts.json`. Configuration belongs in `.env.local`; use [.env.example](.env.example) as the reference. The fixture command creates a clearly labelled synthetic PDF and PNG under `.local-data/fixtures`.
 
-**Try the current flow:** sign in as administrator and configure a document type → sign in as operator → choose a village and upload a fixture → inspect the preview → edit metadata with a reason → review history and download the original. Follow the [Phase 2 walkthrough](docs/PHASE_2.md).
+**Try the current flow:** sign in as administrator and configure a document type → sign in as operator → choose a village and upload a fixture → inspect the preview → start processing → run `npm run worker:processing` → refresh the document to inspect submit/poll history. Follow the [Phase 3 walkthrough](docs/PHASE_3.md).
 
 ### Verification commands
 
@@ -317,7 +317,7 @@ Integration tests create temporary databases and storage. Browser tests run agai
 | [AI pipeline](docs/AI_PIPELINE.md) | Application processing and evaluation design |
 | [Security](docs/SECURITY.md) | Access control, source integrity and privacy |
 | [Integrations](docs/INTEGRATIONS.md) | Planned government exchange and GIS adapters |
-| [Phase 1](docs/PHASE_1.md) / [Phase 2](docs/PHASE_2.md) | Delivered functionality and verification |
+| [Phase 1](docs/PHASE_1.md) / [Phase 2](docs/PHASE_2.md) / [Phase 3](docs/PHASE_3.md) | Delivered functionality and verification |
 | [Deployment](docs/DEPLOYMENT.md) | Environment, setup and operations |
 | [Implementation plan](docs/IMPLEMENTATION_PLAN.md) | Phase sequence and completion gates |
 | [Demo guide](docs/DEMO_GUIDE.md) | Current and planned demonstration flows |

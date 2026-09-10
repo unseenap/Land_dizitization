@@ -118,7 +118,7 @@ export default async function Documents({
                   </span>
                 </td>
                 <td>
-                  <span className="tag">Uploaded</span>
+                  <span className="tag">{doc.status}</span>
                 </td>
               </tr>
             ))}

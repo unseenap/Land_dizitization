@@ -10,6 +10,8 @@ import {
 } from "@/modules/documents/server/service";
 import { PdfPreview } from "@/modules/documents/ui/pdf-preview";
 import { MetadataEditor } from "@/modules/documents/ui/metadata-editor";
+import { getProcessingJob } from "@/modules/processing/server/service";
+import { ProcessingControls } from "@/modules/processing/ui/processing-controls";
 export default async function DocumentPage({
   params,
 }: {
@@ -22,6 +24,9 @@ export default async function DocumentPage({
     throw e;
   });
   const history = await getDocumentHistory(token, id);
+  const processing = actor.permissions.includes("processing.read")
+    ? await getProcessingJob(token, id)
+    : null;
   return (
     <>
       <div className="page-heading">
@@ -60,8 +65,15 @@ export default async function DocumentPage({
         <div className="stack">
           <section className="panel">
             <h2>Document details</h2>
-            <span className="tag">Uploaded</span>
-            <p className="small muted">Processing begins in a later phase.</p>
+            <span className="tag">{doc.status}</span>
+            {actor.permissions.includes("processing.read") && (
+              <ProcessingControls
+                documentId={id}
+                csrfToken={csrfToken(token!)}
+                initial={processing}
+                canSubmit={actor.permissions.includes("processing.submit")}
+              />
+            )}
             <dl className="detail-list">
               {Object.entries({
                 Filename: doc.originalName,

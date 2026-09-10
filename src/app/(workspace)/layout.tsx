@@ -39,7 +39,7 @@ export default async function WorkspaceLayout({
           )}
         </nav>
         <div className="sidebar-bottom">
-          <span className="tag dark">Phase 2 · Documents</span>
+          <span className="tag dark">Phase 3 · Processing</span>
           <p>Secure access and traceable actions.</p>
         </div>
       </aside>

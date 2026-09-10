@@ -2,7 +2,7 @@
 
 ## Implemented scope
 
-Phase 1 implements identity, scoped user management, audit, configuration and error handling. Phase 2 adds administrative hierarchy, versioned document types, private upload/storage/preview/download, descriptive metadata and history. PHASE_1.md and PHASE_2.md record the implemented boundaries; processing and later workflows below remain target behavior.
+Phase 1 implements identity, scoped user management, audit, configuration and error handling. Phase 2 adds administrative hierarchy, versioned document types, private upload/storage/preview/download, descriptive metadata and history. Phase 3 adds durable processing jobs/outbox, a server-only model API adapter, strict result validation, immutable artifacts and the worker loop. PHASE_1.md, PHASE_2.md and PHASE_3.md record the implemented boundaries; extraction validation and later workflows remain target behavior.
 
 Current roles are seeded configuration with fixed permission codes. Administrators assign one role and one or more jurisdictions to each account. Districts map these scopes to state/tehsil/village hierarchy. Full role-definition editing and password reset/rotation UI are pending. User access edits revoke every active session and reject stale revisions; self-access changes require another administrator.
 
@@ -35,7 +35,7 @@ All access requires department/jurisdiction scope. Separate uploader from approv
 
 Happy path: UPLOADED → QUEUED → PREPROCESSING → OCR_PROCESSING → OCR_COMPLETED → EXTRACTION_PROCESSING → EXTRACTION_COMPLETED → VALIDATION_PROCESSING → VERIFICATION_REQUIRED → VERIFIED → APPROVED.
 
-Preprocessing/OCR/extraction labels reflect reported remote stages only. If the model returns no detailed progress, show “Model processing” with the known job status; do not fabricate completed sub-stages.
+Preprocessing/OCR/extraction labels reflect reported remote stages only. If the model returns no detailed progress, show “Model processing” with the known job status; do not fabricate completed sub-stages. Phase 3 persists remote attempts and status but does not implement inference locally.
 
 Record review needs an exact revision. Every edit invalidates affected field approvals and prior validation. Verification completion requires resolved blocking findings and required field decisions. Explicit final approval creates a record version.
 

@@ -1,6 +1,6 @@
 # Planned demonstration
 
-Phase 1 can be demonstrated now: sign in with a generated synthetic account, inspect assigned scope, create/edit a user as administrator, review audit history and sign out. Follow PHASE_1.md for setup and credentials. Phase 2 upload, preview, metadata history and configuration can also be demonstrated now using PHASE_2.md and generated synthetic PDF/PNG fixtures. Model predictions, approval and government/GIS integration in the scenario below remain planned.
+Phases 1-3 can be demonstrated now: sign in with a generated synthetic account, configure a document type, upload a fixture, queue processing, run the mock worker and inspect durable job history. Follow PHASE_1.md, PHASE_2.md and PHASE_3.md for setup and credentials. The mock adapter is not OCR; approval and government/GIS integration remain planned.
 
 ## Fixtures
 

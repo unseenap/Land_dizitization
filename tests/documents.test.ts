@@ -34,6 +34,12 @@ import {
   getDocumentPages,
 } from "../src/modules/documents/server/service";
 import { inspectDocument } from "../src/modules/documents/server/inspect";
+import {
+  submitProcessing,
+  getProcessingJob,
+  ingestModelResult,
+} from "../src/modules/processing/server/service";
+import { runProcessingOnce } from "../src/modules/processing/server/worker";
 const suffix = randomBytes(8).toString("hex"),
   dbName = `land_docs_test_${suffix}`,
   accountFile = `.local-data/test-accounts-${suffix}.json`,
@@ -512,4 +518,60 @@ test('concurrent identical keys create one document and a preview write failure 
  storage.put=async(k,b)=>{if(k.endsWith('preview.webp'))throw new Error('Simulated preview storage failure');return originalPut(k,b);};
  try{await assert.rejects(uploadDocument(operator,{name:'failed.png',type:'image/png',bytes:await sampleImage()},metadata(),randomUUID(),randomUUID()));}finally{storage.put=originalPut;}
  assert.equal((await listDocuments(operator)).total,before+1);assert.deepEqual((await readdir(storageRoot,{recursive:true})).filter(f=>f.endsWith('.bin')||f.endsWith('.webp')).sort(),files);
+});
+
+test("processing submission is idempotent and mock worker ingests a validated artifact", async () => {
+  const queued = await submitProcessing(
+    operator,
+    documentId,
+    { tasks: ["ocr"], languageHints: ["en"] },
+    randomUUID(),
+  );
+  assert.equal(queued.reused, false);
+  assert.equal(queued.job.status, "QUEUED");
+  const repeated = await submitProcessing(
+    operator,
+    documentId,
+    { tasks: ["ocr"], languageHints: ["en"] },
+    randomUUID(),
+  );
+  assert.equal(repeated.reused, true);
+  assert.equal(repeated.job.id, queued.job.id);
+
+  assert.equal(await runProcessingOnce(), true);
+  assert.equal(await runProcessingOnce(), true);
+  assert.equal(await runProcessingOnce(), false);
+  const detail = await getProcessingJob(operator, documentId);
+  assert.equal(detail?.job.id, queued.job.id);
+  assert.equal(detail?.job.status, "SUCCEEDED");
+  assert.equal(detail?.artifacts.length, 1);
+  assert.equal(detail?.artifacts[0].accepted, true);
+  assert.ok(detail?.attempts.some((row) => row.operation === "submit"));
+  assert.ok(detail?.attempts.some((row) => row.operation === "poll"));
+});
+
+test("malformed model results are quarantined and cannot complete a job", async () => {
+  const image = await sampleImage("png");
+  const uploaded = await uploadDocument(
+    operator,
+    { name: "processing-invalid.png", type: "image/png", bytes: image },
+    metadata(),
+    randomUUID(),
+    randomUUID(),
+  );
+  const queued = await submitProcessing(
+    operator,
+    uploaded.document.id,
+    { tasks: ["ocr"] },
+    randomUUID(),
+  );
+  const result = await ingestModelResult(queued.job.id, {
+    contract_version: "1.0",
+    document_id: uploaded.document.id,
+  });
+  assert.equal(result.accepted, false);
+  assert.equal(result.code, "MODEL_INVALID_RESPONSE");
+  const detail = await getProcessingJob(operator, uploaded.document.id);
+  assert.equal(detail?.job.status, "RESULT_REJECTED");
+  assert.equal(detail?.artifacts[0].accepted, false);
 });

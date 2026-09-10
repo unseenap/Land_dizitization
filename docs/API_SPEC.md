@@ -1,10 +1,10 @@
 # Next.js application API
 
-Base /api/v1 uses Next.js Route Handlers. Phase 1 implements auth/login, auth/logout, auth/me, users list/create/detail/update, audit list, master-data/jurisdictions and health/live/ready. Phase 2 adds the document, document-type and master-data endpoints described below. Other workflow endpoints remain proposed. The model service is not connected.
+Base /api/v1 uses Next.js Route Handlers. Phases 1 and 2 implement identity, audit, master-data, document-type and document intake endpoints. Phase 3 adds processing submission and status endpoints backed by durable jobs and a server-only model adapter. Later workflow endpoints remain proposed; the default model adapter is a labelled no-inference mock.
 
 Current payloads use camelCase: user creation accepts name, email, password, role, scopeIds; access updates accept expectedRevision, active, role, scopeIds. Login returns csrfToken; /auth/me returns user and csrfToken. Send X-CSRF-Token and matching Origin on authenticated mutations. Paginated user/document/audit collections use fixed page_size 25. Later workflow examples below are proposed contracts, not currently callable endpoints.
 
-## Implemented Phase 2 endpoints
+## Implemented Phase 2 and Phase 3 endpoints
 
 | Endpoint | Payload / response |
 |---|---|
@@ -20,6 +20,8 @@ Current payloads use camelCase: user creation accepts name, email, password, rol
 | GET /documents/{id}/content | Authenticated PDF bytes or reencoded WebP preview; `?download=1` returns unchanged source as attachment |
 | GET /documents/{id}/pages | `{items:[{pageNumber,width,height}]}`; PDF points or source image pixels |
 | GET /documents/{id}/history | `{metadata,status}` with immutable revisions, reasons, actors and timestamps |
+| POST /documents/{id}/process | `{tasks?,languageHints?,requestedModelVersion?}`; authorized operator/admin; 202 with durable job summary; idempotent for document revision |
+| GET /documents/{id}/processing | Scoped latest job with status, attempts, artifacts and immutable job history |
 
 Upload metadata is `{title,villageId,schemaVersionId,language?,reference?,notes?}`. `villageId` is required, `schemaVersionId` is a version UUID or null. The department/uploader come from the session. Successful upload returns 201 `{document,reused:false}`; an identical retry under the same user's key returns 200 `{document,reused:true}`. Changed content under the same key returns 409. This does not deduplicate independently uploaded identical files.
 

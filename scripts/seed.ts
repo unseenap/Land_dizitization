@@ -92,11 +92,11 @@ export async function seed(accountFile = ".local-data/demo-accounts.json") {
         [department, code, name],
       );
     const grants: Record<string, string[]> = {
-      administrator: ["users.manage", "audit.read", "workspace.read"],
-      operator: ["workspace.read"],
-      verifier: ["workspace.read"],
+      administrator: ["users.manage", "audit.read", "workspace.read", "processing.read", "processing.submit"],
+      operator: ["workspace.read", "processing.submit", "processing.read"],
+      verifier: ["workspace.read", "processing.read"],
       gis_officer: ["workspace.read"],
-      supervisor: ["workspace.read", "audit.read"],
+      supervisor: ["workspace.read", "audit.read", "processing.read"],
     };
     for (const [role, permissions] of Object.entries(grants)) {
       await client.query(

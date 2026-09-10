@@ -1,10 +1,12 @@
 # PostgreSQL / PostGIS schema design
 
-Phase 1 schema and reviewed SQL migration 0001_foundation.sql are implemented, with Drizzle used for runtime data access. Implemented tables: departments, jurisdictions, users, roles, permissions, user_roles, role_permissions, user_scopes, sessions, login_limits and audit_logs. A checksum-tracked schema_migrations table belongs to the migration runner. The table plan below is the full target, not a list of already-created tables.
+Phase 1 schema and reviewed SQL migration 0001_foundation.sql are implemented, with Drizzle used for runtime data access. Implemented tables: departments, jurisdictions, users, roles, permissions, user_roles, role_permissions, user_scopes, sessions, login_limits and audit_logs. A checksum-tracked schema_migrations table belongs to the migration runner.
 
 Phase 2 migration `0002_documents.sql` adds states, districts, tehsils, villages, document_types, document_schema_versions, documents, document_pages, document_metadata, document_status_history and upload_limits. Districts map one-to-one to existing jurisdiction scopes. Composite foreign keys prevent cross-department parent references. Document village is required; pinned schema is nullable. PostGIS/geometry remains deferred.
 
 SQL grants keep land_app separate from the migration owner. Runtime cannot create tables, delete documents, mutate historical rows or change hierarchy entries. A document trigger prevents rewriting its original identity, location, hash, uploader or pinned schema. Metadata, status and schema histories reject mutation even by ordinary owner DML. Immutable triggers are not protection from a malicious database administrator who can disable them. User-scope triggers prevent cross-department assignment. Use new migrations for changes; applied checksums must remain unchanged.
+
+Phase 3 migrations `0003_processing.sql` and `0004_processing_permissions.sql` add `processing_jobs`, `processing_attempts`, `processing_outbox`, `processing_artifacts` and `processing_job_history`. The application worker uses these tables for durable submit/poll/ingest and preserves rejected model payloads as diagnostic artifacts.
 
 ## Tables by module
 
@@ -14,7 +16,7 @@ SQL grants keep land_app separate from the migration owner. Runtime cannot creat
 | master-data | departments; states; districts(state_id); tehsils(district_id); villages(tehsil_id), each with unique scoped code/name/source/version |
 | document-types | document_types(code, name); document_schema_versions(type_id, version, JSON schema, required/critical fields), unique type/version |
 | documents | documents(department_id, uploader_id, village_id nullable, status, revision, original_key, MIME, byte_size, sha256); document_metadata(document_id, version, schema-bound JSONB); document_pages(document_id, page_number, dimensions, derived_key, transform); document_status_history |
-| processing | processing_jobs(document_id, revision, request_key, input_hash, status); processing_stages(job_id, stage, attempt, status); model_profiles; ocr_runs(job_id, remote_job_id, model_version); ocr_blocks(ocr_run_id, page_id, text, bbox, confidence, language); ai_model_runs(job_id, model/prompt/schema versions, remote IDs, timings, error); extraction_results(run_id, schema_version_id, document_revision, accepted_output); extracted_fields(result_id, field_path, original/normalized value, confidence); field_evidence(field_id, page_id, block_ids, bbox) |
+| processing | processing_jobs(document_id, revision, request/payload hashes, status, remote job/model metadata); processing_attempts(job_id, operation, attempt, status, remote ID, error); processing_outbox(job_id, submit/poll event, availability and lock); processing_artifacts(job_id, accepted/rejected payload and hash); processing_job_history(job_id, status/stage transitions) |
 | validation | validation_rules(code, version, severity, configuration); validation_results(review_revision_id or extraction_result_id, rule_id, field_path, status, source, expected/actual, resolution) |
 | duplicates | duplicate_matches(document_revision, candidate_record_version_id or candidate_document_id, signals, score, state, resolved_by, reason) |
 | verification | review_revisions(document_id, base_extraction_id, revision, values); verification_tasks(document_id, submitted_revision, assignee, state); verification_actions(task_id, action, actor, reason, timestamp); field_decisions(task_id, revision, field_path, decision); field_corrections(task_id, field_path, old/new, source, reason) |

@@ -1,6 +1,6 @@
 # Current state
 
-Last Updated: 2026-09-10.
+Last Updated: 2026-09-11.
 
 ## Completed
 
@@ -24,16 +24,20 @@ Last Updated: 2026-09-10.
 - Migration 0002_documents.sql applied; Drizzle runtime mappings, synthetic hierarchy/types and generated fictional PDF/PNG fixtures added.
 - Final verification: all 21 PostgreSQL integration tests and all 6 Chrome browser scenarios passed. Build, TypeScript and ESLint passed. Client scan checked 21 JavaScript files without finding configured server secrets.
 - Desktop/mobile document screenshots inspected; upload, schema administration, metadata history, source download and lost-response retry verified through the browser.
+- Phase 3 durable processing: PostgreSQL jobs, attempts, transactional outbox, immutable artifacts and job history.
+- Server-only versioned model contract with strict mock and HTTP adapters; results are checked for identity, revision, input hash, schema, field keys, evidence pages/bounds and confidence ranges.
+- Processing submission/status APIs, document processing controls and a TypeScript worker for durable submit/poll/ingest.
+- Processing tests cover idempotent submission, worker submit/poll ingestion, accepted artifacts and malformed-result quarantine.
 
 ## Working
 
-Phases 1 and 2 complete. Phase 3 and later remain outside the current authorization.
+Phases 1, 2 and 3 complete. Phase 4 and later remain pending.
 
 ## Pending
 
-Phase 3: durable processing jobs/outbox and the independently hosted model API contract/adapter.
+Phase 4: evidence-aware extraction output, normalization, business/master-data validation and duplicate matching.
 
-Later: durable processing worker, model API adapter, OCR/extraction/validation, duplicate matching, record verification/approval, immutable land-record versions/search, PostGIS/parcel linking, government adapters, processing dashboards and feedback/evaluation.
+Later: record verification/approval, immutable land-record versions/search, PostGIS/parcel linking, government adapters, processing dashboards and feedback/evaluation.
 
 ## Known issues and limits
 
@@ -41,24 +45,24 @@ Later: durable processing worker, model API adapter, OCR/extraction/validation, 
 - Districts map to existing department jurisdiction scopes; descendants inherit that boundary. Administrative entries are create-only in Phase 2. Partial-scope audit readers see only their own events; full-department readers see department events.
 - Roles/permission definitions are seeded; user role assignment works, but editing permission definitions through a UI is not implemented.
 - Password-reset/rotation UX, SSO/MFA, retention cleanup, production infrastructure/security assessment and model data-sharing decisions remain pending.
-- Uploaded source documents are supported; only fictional local fixtures have been used for verification. No model inference, government connection or extraction accuracy is claimed.
+- Uploaded source documents are supported; only fictional local fixtures have been used for verification. The default mock model performs no inference, and no extraction accuracy or government connection is claimed.
 - Phase 2 storage is local/persistent only; no S3 adapter or ephemeral/multi-instance filesystem support. Antivirus/quarantine, OS parser isolation, crash-orphan reconciliation, encryption and backup restore verification remain production work. See PHASE_2.md for exact limits.
-- PDF/JPEG/PNG/single-page TIFF are accepted. Documents remain UPLOADED; no OCR or processing job is started. Pinned schema/location cannot be changed through the metadata editor.
+- PDF/JPEG/PNG/single-page TIFF are accepted. Processing uses the mock adapter by default; a real OCR service requires HTTP model configuration and authorized input transfer. Pinned schema/location cannot be changed through the metadata editor.
 - Windows local DB needs PostgreSQL command-line tools in PATH. The browser tests use installed Chrome.
 - Browser tests create and deactivate synthetic test accounts; their audit history is intentionally retained in the local demo database. Integration tests use a separate temporary database.
 
 ## Important decisions
 
-Next.js owns frontend and backend. Domain services remain server-only and callable from authorized server pages or API routes. The separately hosted model is not installed in this project. Drizzle owns runtime relational access; checksum-tracked reviewed SQL migrations own schema changes. pg-boss remains a future queue choice, not an installed worker.
+Next.js owns frontend and backend. Domain services remain server-only and callable from authorized server pages or API routes. The separately hosted model is not installed in this project. Drizzle owns runtime relational access; checksum-tracked reviewed SQL migrations own schema changes. Phase 3 uses the PostgreSQL outbox worker; pg-boss remains a future queue option.
 
 Local credentials live only in ignored .env.local and .local-data/demo-accounts.json. Migrations/seeds/tests use MIGRATION_DATABASE_URL; the app uses DATABASE_URL with restricted land_app credentials. Production should not inject the owner credential into the web process.
 
 ## Mocked / not yet integrated
 
-Departments/accounts are explicitly synthetic. Model and government mock adapters are only designed, not implemented. No LRMS, DILRMP, registration, cadastral or model endpoint is connected.
+Departments/accounts are explicitly synthetic. The mock model adapter is implemented for contract/worker tests but is not OCR. No production model endpoint, LRMS, DILRMP, registration or cadastral service is connected.
 
 ## Next recommended tasks
 
-1. Review the completed document flow using docs/PHASE_2.md.
-2. Align the proposed model contract with the independently developed model.
-3. Begin Phase 3 durable jobs and model adapter only when instructed.
+1. Align `docs/MODEL_API_CONTRACT.md` and shared fixtures with the independently developed OCR service.
+2. Configure authorized cross-host input delivery and run the worker against the real model in a controlled environment.
+3. Begin Phase 4 extraction evidence, normalization, validation and duplicate matching.

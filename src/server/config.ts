@@ -16,6 +16,11 @@ const schema = z
     MAX_UPLOAD_MB: z.coerce.number().int().min(1).max(25).default(25),
     MAX_DOCUMENT_PAGES: z.coerce.number().int().min(1).max(100).default(100),
     MAX_BATCH_FILES: z.coerce.number().int().min(1).max(20).default(20),
+    MODEL_API_MODE: z.enum(["mock", "http"]).default("mock"),
+    MODEL_API_URL: z.url().optional(),
+    MODEL_API_TOKEN: z.string().min(1).optional(),
+    MODEL_INPUT_BASE_URL: z.url().optional(),
+    MODEL_API_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(30000),
   })
   .superRefine((value, context) => {
     if (
@@ -26,6 +31,13 @@ const schema = z
         code: "custom",
         path: ["APP_URL"],
         message: "Production requires HTTPS",
+      });
+    }
+    if (value.MODEL_API_MODE === "http" && (!value.MODEL_API_URL || !value.MODEL_API_TOKEN || !value.MODEL_INPUT_BASE_URL)) {
+      context.addIssue({
+        code: "custom",
+        path: ["MODEL_API_URL"],
+        message: "HTTP model mode requires MODEL_API_URL, MODEL_API_TOKEN and MODEL_INPUT_BASE_URL",
       });
     }
   });

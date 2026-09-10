@@ -232,3 +232,112 @@ export const uploadLimits = pgTable("upload_limits", {
   attempts: integer("attempts").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
+
+export const processingJobs = pgTable("processing_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  documentId: uuid("document_id")
+    .notNull()
+    .references(() => documents.id),
+  departmentId: uuid("department_id")
+    .notNull()
+    .references(() => departments.id),
+  documentRevision: integer("document_revision").notNull(),
+  inputSha256: text("input_sha256").notNull(),
+  schemaVersionId: uuid("schema_version_id").references(
+    () => documentSchemaVersions.id,
+  ),
+  status: text("status").notNull().default("QUEUED"),
+  stage: text("stage").notNull().default("QUEUED"),
+  requestId: uuid("request_id").notNull(),
+  payloadHash: text("payload_hash").notNull(),
+  tasks: jsonb("tasks").notNull().default([]),
+  languageHints: jsonb("language_hints").notNull().default([]),
+  requestedModelVersion: text("requested_model_version"),
+  remoteJobId: text("remote_job_id"),
+  contractVersion: text("contract_version"),
+  provider: text("provider"),
+  modelName: text("model_name"),
+  modelVersion: text("model_version"),
+  promptVersion: text("prompt_version"),
+  attempt: integer("attempt").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(3),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  errorCode: text("error_code"),
+  errorMessage: text("error_message"),
+  retryable: boolean("retryable"),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const processingAttempts = pgTable("processing_attempts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  jobId: uuid("job_id")
+    .notNull()
+    .references(() => processingJobs.id),
+  operation: text("operation").notNull(),
+  attempt: integer("attempt").notNull(),
+  status: text("status").notNull(),
+  remoteJobId: text("remote_job_id"),
+  requestId: uuid("request_id"),
+  payloadHash: text("payload_hash"),
+  errorCode: text("error_code"),
+  errorMessage: text("error_message"),
+  startedAt: timestamp("started_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+});
+
+export const processingOutbox = pgTable("processing_outbox", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  jobId: uuid("job_id")
+    .notNull()
+    .references(() => processingJobs.id),
+  eventType: text("event_type").notNull(),
+  availableAt: timestamp("available_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  lockedAt: timestamp("locked_at", { withTimezone: true }),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  attempts: integer("attempts").notNull().default(0),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const processingArtifacts = pgTable("processing_artifacts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  jobId: uuid("job_id")
+    .notNull()
+    .references(() => processingJobs.id),
+  kind: text("kind").notNull(),
+  accepted: boolean("accepted").notNull(),
+  rejectionCode: text("rejection_code"),
+  payload: jsonb("payload").notNull(),
+  sha256: text("sha256").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const processingJobHistory = pgTable("processing_job_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  jobId: uuid("job_id")
+    .notNull()
+    .references(() => processingJobs.id),
+  fromStatus: text("from_status"),
+  toStatus: text("to_status").notNull(),
+  stage: text("stage").notNull(),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
