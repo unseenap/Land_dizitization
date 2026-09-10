@@ -7,7 +7,7 @@ Read in order:
 4. docs/CURRENT_STATE.md
 5. docs/MODULE_STRUCTURE.md and the relevant module README.
 
-The latest user instruction fixes Next.js for frontend AND application backend, PostgreSQL for the database, and a separate model exposed through an API. This overrides illustrative technology recommendations in either supplied master prompt. The current authorized phase is redesigning documentation and the modular structure; working application features remain for the owner's next instruction.
+The user has authorized Phase 2: configurable document types, administrative master data, secure uploads, private storage/previews, metadata and document history. Preserve the completed Phase 1 identity/RBAC/audit foundation. Next.js is required for frontend AND application backend, PostgreSQL for the database, and a separate model exposed through an API. This overrides illustrative technology recommendations in either supplied master prompt. Model processing and later phases remain outside this request.
 
 - Inspect current files before edits; preserve both supplied master prompts.
 - Use Next.js App Router and Route Handlers with TypeScript business modules. Keep routes thin.

@@ -1,5 +1,7 @@
 # Architecture and technology recommendations
 
+Phase 1 status: Next.js UI/API, PostgreSQL/Drizzle identity and audit are implemented. Worker, model, storage and government adapter nodes in the diagram remain planned. Dependency versions are pinned for installed Phase 1 packages; see PHASE_1.md for the actual runtime and limits.
+
 ## System topology
 
 ~~~mermaid

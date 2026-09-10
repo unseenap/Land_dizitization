@@ -1,6 +1,6 @@
 # identity module
 
-Status: design boundary only; no runtime implementation.
+Status: Phase 1 implemented. contracts/index.ts validates login and account input. server/service.ts handles sessions, user management, permission/scope checks and access-change revocation; server/password.ts handles scrypt hashing. UI forms support sign-in, sign-out, creation and revision-checked access editing. Role definitions are seeded; role-definition editing and password recovery remain future work.
 
 ## Ownership
 

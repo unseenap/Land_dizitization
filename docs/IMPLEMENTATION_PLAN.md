@@ -1,12 +1,12 @@
 # Implementation plan after design approval
 
-Current work stops at documentation and modular structure. Each later phase should deliver functioning UI → Next.js API/service → PostgreSQL behavior, with relevant critical tests.
+Phases 1 and 2 are authorized and implemented. Their working UI → Next.js API/service → PostgreSQL paths are documented in PHASE_1.md and PHASE_2.md. Phase 3 and later remain pending authorization. Each phase must preserve critical tests and update current state.
 
 | Phase | Modules / deliverables | Completion gate |
 |---|---|---|
 | 1 Foundation | Next.js, typed config, DB/migrations, identity, audit | Login and denied cross-scope requests; clean migration; no secret leakage |
 | 2 Documents | Type schemas, master data, uploads/private previews/history | Valid file stored and previewed; invalid/foreign files denied |
-| 3 Model contract and jobs | Queue/outbox, mock adapter, model API fixtures, then real adapter | Submit/poll/ingest survives retry; malformed/stale outputs rejected |
+| 3 Model contract and jobs  | Queue/outbox, mock adapter, model API fixtures, then real adapter | Submit/poll/ingest survives retry; malformed/stale outputs rejected |
 | 4 Extraction and validation | Evidence, normalization, business/master checks, duplicates | Multiple types/languages represented; blockers and duplicate reasons visible |
 | 5 Verification | Split viewer, field decisions, return/edit/approve | Concurrent/stale edits safe; approval immutable and audited |
 | 6 Records | Owners/mutations/registration, search/version history | Approved record retrieved by required filters within scope |

@@ -1,6 +1,10 @@
 # Security and privacy design
 
-All controls are planned, not implemented or certified.
+Phase 1 implements scrypt password hashing (N=32768, r=8, p=1), random opaque sessions stored as SHA-256 hashes, HttpOnly/SameSite cookies, HTTPS-dependent Secure cookies, strict Origin and session-bound CSRF checks, role/scope service checks, bounded JSON bodies and account/global sign-in throttling. User access changes revoke sessions. SQL grants and a trigger protect audit history. Integration/browser tests cover the implemented boundaries; no security certification is claimed.
+
+Phase 2 adds bounded multipart input, extension/MIME/signature and parser validation, private generated storage keys, PDF active-content rejection, reencoded image previews, scoped authenticated file reads, upload rate limits, idempotency and immutable document history. File-access audit must succeed before bytes are returned. Failed upload database transactions remove their newly written files.
+
+Production gaps include SSO/MFA, password reset/rotation workflow, managed secret injection, a reviewed full CSP, proxy/network rate limits, antivirus/quarantine, OS-level parser isolation, crash-orphan reconciliation, retention/cleanup jobs and infrastructure encryption/backup verification. Worker-thread heap/time limits are not a complete native-memory or malware sandbox. Model safeguards below remain future work. Keep MIGRATION_DATABASE_URL out of the web runtime environment and provision the runtime account separately.
 
 ## Next.js trust boundaries
 

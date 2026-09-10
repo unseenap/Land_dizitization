@@ -1,6 +1,6 @@
 # document-types module
 
-Status: design boundary only; no runtime implementation.
+Status: Phase 2 implemented: department-scoped type creation and immutable schema publication.
 
 ## Ownership
 
@@ -8,11 +8,11 @@ Configurable document types and immutable extraction schema versions.
 
 ## Public operations
 
-Publish schema, select type, list fields and critical-field policy.
+`listTypes`, `createType`, `publishVersion`. Configurable scalar fields expose key, label, type, required and critical annotations. Administrator publication requires the expected current version and a reason.
 
 ## Dependencies and invariants
 
-Processing pins schema versions; UI forms use safe schema contracts.
+Uploads pin schema versions; UI forms use safe schema contracts. Publishing a new version does not change existing documents. The future processing adapter will consume the pinned schema.
 
 ## Implementation layout
 

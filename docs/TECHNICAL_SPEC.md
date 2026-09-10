@@ -1,5 +1,13 @@
 # Technical specification
 
+## Implemented scope
+
+Phase 1 implements identity, scoped user management, audit, configuration and error handling. Phase 2 adds administrative hierarchy, versioned document types, private upload/storage/preview/download, descriptive metadata and history. PHASE_1.md and PHASE_2.md record the implemented boundaries; processing and later workflows below remain target behavior.
+
+Current roles are seeded configuration with fixed permission codes. Administrators assign one role and one or more jurisdictions to each account. Districts map these scopes to state/tehsil/village hierarchy. Full role-definition editing and password reset/rotation UI are pending. User access edits revoke every active session and reject stale revisions; self-access changes require another administrator.
+
+Audit readers holding every jurisdiction see department events; narrower-scope readers see only their own events. This conservative Phase 1 rule avoids exposing other jurisdictions while record-specific audit scope is not implemented.
+
 ## Application stack and organization
 
 Next.js App Router serves the UI and /api/v1 Route Handlers on the Node.js runtime. TypeScript is shared across routes, domain services and job orchestration. PostgreSQL/PostGIS is the system of record, with Drizzle and reviewed SQL migrations recommended. See MODULE_STRUCTURE for ownership.

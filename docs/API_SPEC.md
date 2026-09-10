@@ -1,6 +1,31 @@
 # Next.js application API
 
-Proposed base /api/v1, implemented later through src/app/api/v1 Route Handlers. These endpoints belong to Next.js, independently of the model service's /v1 API.
+Base /api/v1 uses Next.js Route Handlers. Phase 1 implements auth/login, auth/logout, auth/me, users list/create/detail/update, audit list, master-data/jurisdictions and health/live/ready. Phase 2 adds the document, document-type and master-data endpoints described below. Other workflow endpoints remain proposed. The model service is not connected.
+
+Current payloads use camelCase: user creation accepts name, email, password, role, scopeIds; access updates accept expectedRevision, active, role, scopeIds. Login returns csrfToken; /auth/me returns user and csrfToken. Send X-CSRF-Token and matching Origin on authenticated mutations. Paginated user/document/audit collections use fixed page_size 25. Later workflow examples below are proposed contracts, not currently callable endpoints.
+
+## Implemented Phase 2 endpoints
+
+| Endpoint | Payload / response |
+|---|---|
+| GET /master-data | Scoped `{states,districts,tehsils,villages}` hierarchy |
+| POST /master-data | `{kind,name,code,parentId?,jurisdictionId?}`; administrator; 201 |
+| GET /document-types | `{items}` containing current schema version and field definitions for each department type |
+| POST /document-types | `{code,name,fields,reason}`; administrator; 201 `{id,version}` |
+| POST /document-types/{id}/schema-versions | `{expectedVersion,fields,reason}`; administrator; 201; stale version 409 |
+| POST /documents/upload | Multipart exactly `file` and JSON-string `metadata`; UUID `Idempotency-Key` header; operator |
+| GET /documents | `page`, `q` (title/display ID/reference), optional `villageId` and `typeId`; scoped `{items,page,page_size,total}` |
+| GET /documents/{id} | Safe document DTO; no private object keys |
+| PATCH /documents/{id} | `{expectedRevision,title,language,reference,notes,reason}`; uploader only; 200 `{id,revision}` |
+| GET /documents/{id}/content | Authenticated PDF bytes or reencoded WebP preview; `?download=1` returns unchanged source as attachment |
+| GET /documents/{id}/pages | `{items:[{pageNumber,width,height}]}`; PDF points or source image pixels |
+| GET /documents/{id}/history | `{metadata,status}` with immutable revisions, reasons, actors and timestamps |
+
+Upload metadata is `{title,villageId,schemaVersionId,language?,reference?,notes?}`. `villageId` is required, `schemaVersionId` is a version UUID or null. The department/uploader come from the session. Successful upload returns 201 `{document,reused:false}`; an identical retry under the same user's key returns 200 `{document,reused:true}`. Changed content under the same key returns 409. This does not deduplicate independently uploaded identical files.
+
+Each field definition is `{key,label,type,required,critical}` with type `text|number|date|boolean`. Schemas contain 1–50 unique safe keys, subject to the shared 16 KiB JSON request bound. Stored JSON Schema allows null for unknown candidates; required and critical annotations remain separate for the later validation workflow. Published versions and document source identity cannot be patched or deleted.
+
+All document reads enforce department and descendant district scope. Private responses are `private, no-store`; file responses also use `nosniff`, same-origin resource policy and restrictive sandbox headers. Unsupported files return 415; corrupt or unsupported document structures return 422; size violations return 413; inspection contention/upload throttling returns 429. See PHASE_2.md for file limits.
 
 ## Shared contract
 

@@ -32,4 +32,4 @@ No actual model URL, endpoint schema, credentials, supported language list, data
 
 Use synthetic data and mock government connectors first. State/language-specific capability claims need representative fixtures. Human record approval is the proposed MVP default even when no field correction is needed. Thresholds remain configurable, not production standards.
 
-This delivery replaces the prior generated design and creates module boundaries. It does not implement the product.
+Phases 1 and 2 implement Next.js, PostgreSQL migrations, scoped identity/user management, audit, administrative hierarchy, versioned document types, private uploads/previews and metadata history. Recognition, model processing, review/approval and GIS remain planned. See PHASE_2.md and CURRENT_STATE.md for the verified boundary.

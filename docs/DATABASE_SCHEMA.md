@@ -1,6 +1,10 @@
 # PostgreSQL / PostGIS schema design
 
-No schema or migration is implemented yet. Recommended migration owner: Drizzle plus reviewed custom SQL. Use UUID keys, timestamptz UTC timestamps, explicit FKs, numeric area values, Unicode text and nullable confidence constrained to 0–1. Identifier strings retain zeros and slashes.
+Phase 1 schema and reviewed SQL migration 0001_foundation.sql are implemented, with Drizzle used for runtime data access. Implemented tables: departments, jurisdictions, users, roles, permissions, user_roles, role_permissions, user_scopes, sessions, login_limits and audit_logs. A checksum-tracked schema_migrations table belongs to the migration runner. The table plan below is the full target, not a list of already-created tables.
+
+Phase 2 migration `0002_documents.sql` adds states, districts, tehsils, villages, document_types, document_schema_versions, documents, document_pages, document_metadata, document_status_history and upload_limits. Districts map one-to-one to existing jurisdiction scopes. Composite foreign keys prevent cross-department parent references. Document village is required; pinned schema is nullable. PostGIS/geometry remains deferred.
+
+SQL grants keep land_app separate from the migration owner. Runtime cannot create tables, delete documents, mutate historical rows or change hierarchy entries. A document trigger prevents rewriting its original identity, location, hash, uploader or pinned schema. Metadata, status and schema histories reject mutation even by ordinary owner DML. Immutable triggers are not protection from a malicious database administrator who can disable them. User-scope triggers prevent cross-department assignment. Use new migrations for changes; applied checksums must remain unchanged.
 
 ## Tables by module
 

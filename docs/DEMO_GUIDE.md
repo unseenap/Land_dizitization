@@ -1,6 +1,6 @@
 # Planned demonstration
 
-Not runnable yet. No sample account, scan, prediction or integration is implemented.
+Phase 1 can be demonstrated now: sign in with a generated synthetic account, inspect assigned scope, create/edit a user as administrator, review audit history and sign out. Follow PHASE_1.md for setup and credentials. Phase 2 upload, preview, metadata history and configuration can also be demonstrated now using PHASE_2.md and generated synthetic PDF/PNG fixtures. Model predictions, approval and government/GIS integration in the scenario below remain planned.
 
 ## Fixtures
 

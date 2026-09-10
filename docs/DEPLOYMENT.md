@@ -1,47 +1,63 @@
-# Deployment plan
+# Development and deployment
 
-**No runtime is installed or deployed.** Current repository contains documentation, module ownership files and environment/ignore templates.
+Phases 1 and 2 run as one Next.js UI/API process, PostgreSQL and a persistent private local storage directory. Background processing jobs, model, S3 and PostGIS remain future-phase services. File inspection uses bounded local worker threads; no model is required for upload or preview.
 
-## Runtime topology
+## Verified environment
 
-1. Next.js Node runtime: frontend pages and backend APIs together.
-2. TypeScript worker: durable processing, polling, integration and feedback jobs.
-3. PostgreSQL with PostGIS: app data, outbox and pg-boss queue.
-4. Private S3-compatible storage: originals and result artifacts.
-5. Separate model service: independently deployed and reachable by authenticated API.
+Node.js 22.20.0, npm 10.9.3, PostgreSQL 18.4, Next.js 16.3.4 and React 19.2.8. Installed versions are pinned in package.json/package-lock.json. Browser tests use Chrome through Playwright.
 
-Recommend a persistent Node/container deployment for the app/worker prototype, with database and object storage separately managed. If the web runtime is serverless, keep the worker persistent and use shared object storage; never depend on an ephemeral web filesystem.
+## Windows local setup
 
-## Future configuration
+Run from the repository root. PostgreSQL tools must be on PATH.
 
-The root .env.example is a configuration template, not validated runtime code.
+```powershell
+npm ci
+npm run db:local
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
 
-| Variable group | Purpose |
-|---|---|
-| APP_ENV, APP_URL, SESSION_SECRET | Runtime environment, public application URL and secret |
-| DATABASE_URL, DATABASE_POOL_MAX | PostgreSQL connection and per-process pool limit |
-| STORAGE_PROVIDER, STORAGE_PATH | Local-demo or S3-compatible storage |
-| S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY | Shared private object storage |
-| MODEL_PROVIDER, MODEL_API_BASE_URL, MODEL_API_KEY | Mock/HTTP model adapter selection and server-only endpoint/secret |
-| MODEL_CONTRACT_VERSION, MODEL_PROFILE | Pinned exchange contract and inference profile |
-| MODEL_HTTP_TIMEOUT_MS, MODEL_JOB_TIMEOUT_MS, MODEL_POLL_INTERVAL_MS | Bounded transport/job lifetime and polling |
-| MODEL_MAX_ATTEMPTS | Transient retry budget |
-| MAX_UPLOAD_MB, MAX_DOCUMENT_PAGES, MAX_BATCH_FILES | Proposed demo file limits |
-| CONFIDENCE_HIGH_THRESHOLD, CONFIDENCE_REVIEW_THRESHOLD | Versioned review policy starting values |
-| INTEGRATION_MODE, LOG_LEVEL | Labelled mock/live government mode and redacted logging |
+Open http://127.0.0.1:3000. The DB script initializes an isolated loopback cluster at .local-data/postgres on port 55432, creates land_owner and restricted land_app credentials, and writes .env.local. It does not alter an existing default-port database. Rerunning starts the same cluster and preserves data. It refuses to overwrite an existing unrelated .env.local during first setup.
 
-The queue uses DATABASE_URL; no separate queue service is required in the recommended baseline. Configuration must fail fast on missing production secrets, invalid thresholds or live mode without an endpoint. Model URL/key are never browser-visible.
+Generated demo credentials are in ignored .local-data/demo-accounts.json. Rerunning the seed adds missing fixtures and does not reset existing users or passwords. If credentials are lost, use an explicit administrator recovery process; the seed does not silently overwrite accounts.
 
-## Setup sequence after implementation authorization
+Stop the isolated database when desired:
 
-Select compatible stable Next.js/Node/TypeScript/database-driver/queue versions and pin a lockfile. Create package scripts and Next.js configuration, validate environment, provision PostgreSQL/PostGIS and private storage, apply reviewed migrations, seed synthetic accounts/data, start web and worker, then verify model capabilities/contract.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/local-db.ps1 -Stop
+```
 
-Frontend and backend share one Next.js development/start command. Worker gets a separate script. Document exact installation, dev, build, worker, migration, seed and test commands only after verifying them. No runnable commands or sample credentials exist yet.
+If a managed execution sandbox blocks PostgreSQL's Windows restricted-token startup, run this local setup command in the user's regular terminal. Browser tests should also run in a regular terminal if the sandbox prevents Playwright from shutting down its server process. Do not change system database services to work around it.
 
-## Operations
+## Other PostgreSQL installations
 
-Readiness verifies DB/storage and exposes model health separately so a model outage need not block record reading. Observe queue age, remote-job age, retry counts, schema rejection rate, processing duration, validation failures and approved export delivery.
+Provision a database and a LOGIN role named land_app, with a separate migration owner that can create tables and grant privileges. Set DATABASE_URL for land_app and MIGRATION_DATABASE_URL for the owner in .env.local or protected environment injection. The migration grants explicitly target land_app. Runtime must not connect as owner or superuser.
 
-Tune combined web/worker connection pools within database limits. Drain workers during upgrades; reconcile pending outbox and remote jobs after restarts. Never perform schema migrations per HTTP request. Use compatible app/migration rollout and a tested rollback plan.
+Set APP_URL to the exact browser origin; the default local origin is http://127.0.0.1:3000. SESSION_SECRET must contain at least 32 characters. APP_ENV=production requires an HTTPS APP_URL. Session cookies are Secure on HTTPS. SESSION_HOURS defaults to 8 and is constrained to 1–24.
 
-Back up database and object storage coherently, encrypt/restrict backups and test restoration. Define retention and recovery objectives with the department. Model deployment lifecycle is independent; new model profiles require compatibility and held-out quality checks before selection.
+## Build and verification
+
+```powershell
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run security:client
+npm run test:e2e
+npm run start
+```
+
+Integration tests need a migration owner permitted to create/drop uniquely named test databases. They seed isolated fixtures, exercise permissions/transactions/file storage and remove only generated test databases and temporary storage. Browser tests target the local demo app: they create/deactivate synthetic users and create document/type/master-data fixtures, preserving their history. They start the production server automatically if it is not already running. Build before running browser tests.
+
+The client security check searches client build files for configured server secret values without printing them. It is a targeted regression check, not a comprehensive penetration test.
+
+## Operations and production limits
+
+/api/v1/health/live checks the app process. /api/v1/health/ready verifies database/session-table access. API logs contain request ID, event code, status and timestamp; credentials and request bodies are excluded. Audit events capture logins and account changes in PostgreSQL.
+
+Before production, configure HTTPS termination, secure environment injection, least-privilege connections, backups and a restore test, reviewed CSP, rate limits at the trusted proxy, session/throttle retention, account recovery, SSO/MFA decisions and jurisdiction provisioning. Do not inject MIGRATION_DATABASE_URL into the deployed web runtime. Current labels and accounts are for synthetic development only.
+
+Phase 2 uses `STORAGE_PROVIDER=local`, `STORAGE_PATH=./.local-storage`. Grant the web-process OS account access and prevent public/static directory mapping. Back up source objects and PostgreSQL together. The web deployment must include `scripts/inspect-document.mjs`, its runtime dependencies and generated `public/pdfjs` assets (copied automatically before build/dev). Ephemeral serverless filesystems and unshared multi-instance disks are unsupported. See PHASE_2.md for limits, failure cleanup and production scanning/orphan-reconciliation gaps.
+
+Future worker deployment must persist jobs independently of HTTP lifetimes. Shared object storage and authenticated model access will be required for document processing. PostGIS, model profiles, government mappings and external data-transfer authorization must be verified in their respective phases.

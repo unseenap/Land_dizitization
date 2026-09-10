@@ -1,14 +1,14 @@
 # master-data module
 
-Status: design boundary only; no runtime implementation.
+Status: Phase 2 implemented: scoped hierarchy lookup and administrative area creation.
 
 ## Ownership
 
-Departments, states, districts, tehsils and villages with source versions.
+Departments, states, districts, tehsils and villages. Districts map to existing jurisdiction scopes; parent relationships and department consistency are enforced by SQL. Entries are append-only through the current UI/API; external reference-data versioning is future work.
 
 ## Public operations
 
-Administrative lookups and hierarchy validation.
+`getMasterData`, `createArea`, `requireVillage`. Administrator creation is scoped; state creation requires all department scopes. Services used by uploads validate the selected village before storage and again inside the write transaction.
 
 ## Dependencies and invariants
 
