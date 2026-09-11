@@ -14,13 +14,13 @@
 
 ---
 
-> **Application:** Phases 1–4 are implemented and verified. **OCR:** the team reports its trained models are ready in the independent model project; connect them through the Phase 3 HTTP adapter. Verification/approval, GIS and government exchange remain later phases.
+> **Application:** Phases 1–6 are implemented and verified; Phases 7–8 are implemented with tests deferred. **OCR:** the team reports its trained models are ready in the independent model project; connect them through the Phase 3 HTTP adapter. Government exchange is implemented as labelled in-process mocks only; live integration remains future work.
 
 ## Project overview
 
 Land departments work with scanned registers, handwritten entries, multilingual documents and inconsistent historical formats. A useful digital record must retain the source evidence, identify uncertainty and make corrections and approval traceable.
 
-This project combines a secure document workspace with a planned OCR-assisted digitization and verification workflow. **Next.js provides both the user interface and application backend. PostgreSQL stores application records and history. A separately deployed OCR service provides recognition through an API.**
+This project combines a secure document workspace with an OCR-assisted digitization and verification workflow. **Next.js provides both the user interface and application backend. PostgreSQL stores application records and history. A separately deployed OCR service provides recognition through an API.**
 
 The goal is to reduce repetitive transcription while keeping officers responsible for verifying records. Source documents, recognized text, field evidence, corrections and approved versions are designed to remain connected throughout the record lifecycle.
 
@@ -33,9 +33,11 @@ The goal is to reduce repetitive transcription while keeping officers responsibl
 | OCR-assisted capture | Recognize printed and handwritten source text | Separate model API boundary implemented; live OCR connection pending |
 | Structured extraction | Map recognized content to land-record fields | Application ingestion implemented; live model connection pending |
 | Validation and duplicate review | Surface inconsistencies and candidate matches | Implemented |
-| Officer verification | Review evidence, correct values and approve revisions | Planned |
-| Records, search and GIS | Retrieve approved records and review parcel links | Planned |
-| Integrations and feedback | Exchange approved records and evaluate model results | Planned |
+| Officer verification | Review evidence, correct values and approve revisions | Implemented |
+| Records and search | Retrieve approved records, owners, history and scoped search | Implemented |
+| GIS parcel links | Review cadastral sources and parcel links | Implemented with synthetic JSONB GeoJSON |
+| Government integrations | Export exact approved versions with acknowledgements | Mock adapters implemented; live exchange pending |
+| Feedback | Evaluate model results with reviewed truth pairs | Planned |
 
 The supplied brief identifies problem **26018**, *Intelligent Land Record Digitization and Validation System*. The supplied SIH format names **Sanganak**, **Smart Automation**, and **Software**. Presentation-specific content is maintained separately in [SIHPPT.md](SIHPPT.md).
 
@@ -56,12 +58,12 @@ flowchart TB
     end
     DB[("PostgreSQL<br/>Application data, versions and audit")]
     Storage["Private storage<br/>Originals and previews"]
-    Jobs["PostgreSQL durable jobs and outbox"]
-    Worker["TypeScript job worker<br/>Versioned model adapter"]
+    Jobs["PostgreSQL durable jobs and outboxes"]
+    Worker["TypeScript job workers<br/>Model and integration adapters"]
     Model["Independent OCR service<br/>Models ready, team reported"]
     Clients["Other authorized model clients"]
-    GIS["Planned: PostGIS and parcel links"]
-    Government["Planned: government adapters"]
+    GIS["Synthetic JSONB GeoJSON parcel links"]
+    Government["Mock LRMS / DILRMP / database adapters"]
     Users --> UI
     Services --> DB
     Services --> Storage
@@ -238,7 +240,10 @@ Current storage requires a persistent private single-host directory. Antivirus/q
 | Model connection | Independent authenticated API | Server-only mock/HTTP adapter implemented |
 | Durable processing | PostgreSQL-backed jobs/outbox; pg-boss proposed | Implemented in Phase 3 |
 | Extraction and validation | Evidence-preserving runs, findings and duplicate review | Implemented in Phase 4 |
-| Spatial records and maps | PostGIS; Leaflet proposed | Planned |
+| Verification and approval | Field decisions, corrections, history and immutable snapshots | Implemented in Phase 5 |
+| Approved records and search | Immutable record versions, owners, mutations, registration and scoped search | Implemented in Phase 6 |
+| Spatial records and maps | Synthetic JSONB GeoJSON parcels, explicit CRS/provenance and reviewed links | Implemented in Phase 7; no PostGIS or interactive map yet |
+| Government exchange | Idempotent approved-version export, durable worker, attempts and mock acknowledgements | Implemented in Phase 8; live adapters pending |
 
 Installed versions are pinned in `package.json` and `package-lock.json`. The model's runtime and hardware are managed separately. PostGIS is not installed in the verified local environment.
 
@@ -250,15 +255,19 @@ Installed versions are pinned in `package.json` and `package-lock.json`. The mod
 | 2 · Documents | Schemas, master data, uploads, private previews and history | Complete |
 | 3 · Model connection | Durable jobs, contract alignment and OCR API adapter | Complete |
 | 4 · Quality | Structured extraction, validation and duplicate review | Complete |
-| 5 · Verification | Officer decisions, corrections and immutable approval | Planned |
-| 6 · Records | Approved versions, owners/mutations and scoped search | Planned |
-| 7 · GIS | Parcel data, provenance and reviewed links | Planned |
-| 8 · Government exchange | Authorized adapters, export and acknowledgements | Planned |
+| 5 · Verification | Officer decisions, corrections and immutable approval | Complete |
+| 6 · Records | Approved versions, owners/mutations and scoped search | Complete |
+| 7 · GIS | Synthetic parcel data, provenance and reviewed links | Complete; tests deferred |
+| 8 · Government exchange | Mock LRMS/DILRMP/database adapters, export and acknowledgements | Complete; tests deferred |
 | 9 · Dashboard | Scoped processing and quality metrics | Planned |
 | 10 · Feedback | Reviewed truth datasets and model evaluation | Planned |
 | 11 · Acceptance | Complete workflow verification and deployment | Planned |
 
-**Verified Phase 4 baseline:** 24 PostgreSQL integration tests and 6 Chrome E2E scenarios passed, including durable processing, malformed-result quarantine, evidence-aware normalization, validation, duplicate signals and audited human resolution. Production build, TypeScript, lint and the client-build secret scan passed. The default mock adapter performs no OCR; these results cover application behavior, not extraction accuracy or production certification.
+**Verified Phase 6 baseline:** 24 PostgreSQL integration tests and all 6 Chrome E2E scenarios pass, including durable processing, malformed-result quarantine, evidence-aware normalization, validation, duplicate signals, task creation, correction, stale-state rejection, audited human decisions, immutable approval snapshots, atomic record materialization, owner/mutation/registration data, version history and scoped search. Production build, TypeScript, ESLint and the client-build secret scan also pass. The default mock adapter performs no OCR; these results cover application behavior, not extraction accuracy or production certification.
+
+**Phase 7 implementation note:** synthetic parcels use JSONB GeoJSON with explicit CRS/provenance and missing-geometry handling. Link proposals pin exact approved record versions and require separate review. Tests were intentionally not run for this phase.
+
+**Phase 8 implementation note:** LRMS, DILRMP and government database exchange use deterministic in-process mocks. Exports pin the exact approved record version, run through a transactional outbox and return acknowledgements labelled `is_mock: true`. Tests were intentionally not run for this phase.
 
 No live government integration, measured end-to-end extraction accuracy or automated approval is claimed. OCR readiness refers to the team's separate model project. See [current application state](docs/CURRENT_STATE.md) and [implementation gates](docs/IMPLEMENTATION_PLAN.md).
 
@@ -282,12 +291,12 @@ Open [the local workspace](http://127.0.0.1:3000). Frontend and backend start to
 | `admin@demo.land` | Configure users, administrative areas and document types |
 | `operator@demo.land` | Upload synthetic documents and edit metadata |
 | `verifier@demo.land` | Inspect documents within the assigned scope |
-| `gis@demo.land` | Inspect scoped source documents |
+| `gis@demo.land` | Inspect documents and propose scoped parcel links |
 | `supervisor@demo.land` | Inspect documents and authorized audit |
 
 Generated passwords live only in ignored `.local-data/demo-accounts.json`. Configuration belongs in `.env.local`; use [.env.example](.env.example) as the reference. The fixture command creates a clearly labelled synthetic PDF and PNG under `.local-data/fixtures`.
 
-**Try the current flow:** sign in as administrator and configure a document type → sign in as operator → choose a village and upload a fixture → inspect the preview → start processing → run `npm run worker:processing` → refresh the document to inspect submit/poll history, extracted fields, validation findings and duplicate candidates. Follow the [Phase 3 walkthrough](docs/PHASE_3.md) and [Phase 4 walkthrough](docs/PHASE_4.md).
+**Try the current flow:** sign in as administrator and configure a document type → sign in as operator → choose a village and upload a fixture → inspect the preview → start processing → run `npm run worker:processing` → refresh the document to inspect extracted fields, findings and duplicate candidates → open the linked verification task → return it for correction if needed → submit field decisions → approve the human-reviewed record → search the approved record and inspect its version history → sign in as GIS officer to propose a parcel link → sign in as verifier to review it → queue a mock government export and run `npm run worker:integrations`. Follow the [Phase 3 walkthrough](docs/PHASE_3.md), [Phase 4 walkthrough](docs/PHASE_4.md), [Phase 5 walkthrough](docs/PHASE_5.md), [Phase 6 walkthrough](docs/PHASE_6.md), [Phase 7 walkthrough](docs/PHASE_7.md) and [Phase 8 walkthrough](docs/PHASE_8.md).
 
 ### Verification commands
 
@@ -317,8 +326,8 @@ Integration tests create temporary databases and storage. Browser tests run agai
 | [Model API contract](docs/MODEL_API_CONTRACT.md) | Proposed interface for the independent OCR service |
 | [AI pipeline](docs/AI_PIPELINE.md) | Application processing and evaluation design |
 | [Security](docs/SECURITY.md) | Access control, source integrity and privacy |
-| [Integrations](docs/INTEGRATIONS.md) | Planned government exchange and GIS adapters |
-| [Phase 1](docs/PHASE_1.md) / [Phase 2](docs/PHASE_2.md) / [Phase 3](docs/PHASE_3.md) / [Phase 4](docs/PHASE_4.md) | Delivered functionality and verification |
+| [Integrations](docs/INTEGRATIONS.md) | Implemented mock government exchange and planned GIS adapters |
+| [Phase 1](docs/PHASE_1.md) / [Phase 2](docs/PHASE_2.md) / [Phase 3](docs/PHASE_3.md) / [Phase 4](docs/PHASE_4.md) / [Phase 5](docs/PHASE_5.md) / [Phase 6](docs/PHASE_6.md) / [Phase 7](docs/PHASE_7.md) / [Phase 8](docs/PHASE_8.md) | Delivered functionality and verification |
 | [Deployment](docs/DEPLOYMENT.md) | Environment, setup and operations |
 | [Implementation plan](docs/IMPLEMENTATION_PLAN.md) | Phase sequence and completion gates |
 | [Demo guide](docs/DEMO_GUIDE.md) | Current and planned demonstration flows |

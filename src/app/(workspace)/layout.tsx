@@ -22,6 +22,11 @@ export default async function WorkspaceLayout({
         <nav aria-label="Main navigation">
           <Link href="/dashboard">Overview</Link>
           <Link href="/documents">Documents</Link>
+          <Link href="/records">Records</Link>
+          {actor.permissions.includes("gis.read") && <Link href="/gis">GIS parcels</Link>}
+          {actor.permissions.includes("integrations.read") && (
+            <Link href="/integrations">Integrations</Link>
+          )}
           {actor.permissions.includes("documents.upload") && (
             <Link href="/documents/upload">Upload documents</Link>
           )}
@@ -39,7 +44,7 @@ export default async function WorkspaceLayout({
           )}
         </nav>
         <div className="sidebar-bottom">
-          <span className="tag dark">Phase 3 · Processing</span>
+          <span className="tag dark">Phase 8 · Integrations</span>
           <p>Secure access and traceable actions.</p>
         </div>
       </aside>

@@ -14,13 +14,13 @@ Model adapter: authenticated communication with the separately deployed inferenc
 | GISAdapter | Spatial layer/parcel queries |
 | CadastralMapAdapter | Source cadastral layers and provenance |
 
-Initial implementations will be MockLRMSAdapter, MockDILRMPAdapter, MockGovernmentDatabaseAdapter and MockCadastralAdapter. No official endpoints are assumed. DILRMP is not treated as a guaranteed universal public API.
+Phase 8 implements in-process mock LRMS, DILRMP and government database adapters. No official endpoints are assumed. DILRMP is not treated as a guaranteed universal public API. Mock cadastral exchange remains future work.
 
 Each response includes source/version, mode mock/live, lookup time, outcome and errors. Unavailability is NOT_CHECKED, not a factual mismatch. UI and payloads clearly label fixtures.
 
 ## Approved snapshot export
 
-Envelope: contract_version, mapping_version, record_id/version, source_document_id, jurisdiction, document_type, configured fields, approval, parcel links, provenance, is_mock and idempotency_key. Minimize personal fields; source images are excluded unless an explicit destination mapping permits them.
+Phase 8 envelope: contract_version, mapping_version, record/version IDs, optional source_document_id, jurisdiction, document_type, configured fields, approval, optional approved parcel links, provenance hashes, `is_mock: true` and idempotency_key. Personal fields are restricted to the configured allowlist; source images are excluded.
 
 Validate mapping before enqueue. Outbox → delivery attempt → acknowledgement tracks a pinned approved version and mapping. Retries retain the same logical key. Reconcile unknown delivery outcomes when destination idempotency is absent. Store restricted summaries, no credentials. Failed export preserves approval; required-destination acknowledgement controls delivery summary only.
 

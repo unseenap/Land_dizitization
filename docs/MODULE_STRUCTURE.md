@@ -1,6 +1,6 @@
 # Modular project structure
 
-Implemented modules: identity, audit, master-data, document-types, documents, processing, validation and duplicates, with Next.js routes, server-only services, safe contracts, UI, migrations and tests. Private local storage and bounded file inspection are shared infrastructure. Other module folders remain design boundaries. The tree below describes the full target layout; PHASE_4.md lists the current extraction/validation boundary.
+Implemented modules: identity, audit, master-data, document-types, documents, processing, validation, duplicates, verification, land-records, gis and integrations, with Next.js routes, server-only services, safe contracts and UI. Private local storage and bounded file inspection are shared infrastructure. Other module folders remain design boundaries. The tree below describes the full target layout; PHASE_8.md lists the current government-mock boundary.
 
 ## Application layout
 
@@ -60,10 +60,10 @@ Create implementation subfolders when they contain real code. Separate server ex
 | processing | Jobs, model adapter, OCR/extraction runs | documents, document-types, validation |
 | validation | Normalization, business rules and findings | master-data, integrations, duplicates |
 | duplicates | Candidate matches, scores, human resolution | documents, land-records, audit |
-| verification | Tasks, field decisions, corrections, approval orchestration | validation, land-records, feedback, audit |
+| verification | Tasks, field decisions, corrections, history, approval snapshots | validation, duplicates, land-records, feedback, audit |
 | land-records | Approved snapshots, owners, mutations, registration, search | documents, gis |
-| gis | Parcel geometry, cadastral sources, link review | master-data, land-records, audit |
-| integrations | LRMS/DILRMP/master adapters, mappings and deliveries | land-records, audit |
+| gis | JSONB GeoJSON parcels, CRS/provenance, version-pinned record-link proposal/review | master-data, land-records, audit |
+| integrations | Mock LRMS/DILRMP/database adapters, append-only mappings, idempotent approved-version exports, acknowledgements and retries | land-records, gis, audit |
 | feedback | Approved truth pairs, dataset versions and evaluations | verification, processing, audit |
 | dashboard | Scoped metric queries/read models | processing, validation, feedback |
 | audit | Append-only events and authorized event reading | explicit actor context |

@@ -1,21 +1,21 @@
 # verification module
 
-Status: design boundary only; no runtime implementation.
+Status: implemented in Phase 5.
 
 ## Ownership
 
-Review tasks, revisions, field decisions, corrections and approval orchestration.
+Verification tasks, field decisions, typed corrections, workflow history and immutable approval snapshots.
 
 ## Public operations
 
-Claim, correct, approve fields, return, reject, verify and approve record.
+Get a scoped task, review fields, submit for approval, return for correction, reject, submit corrections and approve the record.
 
 ## Dependencies and invariants
 
-Atomic approval calls land-records/audit and records feedback intent; reject stale revision.
+Approval is human-only, requires decisions for every field, blocks required/critical null values and unresolved duplicates, and stores an immutable snapshot. Service-level authorization and `expectedStatus` stale-state checks protect both server pages and Route Handlers.
 
 ## Implementation layout
 
-Add contracts/ for browser-safe typed schemas, server/ for services/repositories/policies, ui/ for module components and tests/ for focused unit tests when implementing. Keep server exports separate from client contracts. Routes remain in src/app and delegate to this module.
+`contracts/` contains browser-safe schemas and DTOs, `server/` contains the transactional service, and `ui/` contains the split review workbench. Routes remain in `src/app` and delegate to this module.
 
 See [module structure](../../../docs/MODULE_STRUCTURE.md) and [implementation plan](../../../docs/IMPLEMENTATION_PLAN.md).

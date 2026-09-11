@@ -29,7 +29,7 @@ Next.js frontend & backend · PostgreSQL · Independent OCR model API
 
 Identity and section order follow the supplied [SIH 2026 idea presentation format](docs/SIH2026-IDEA-Presentation-Format.pptx.pdf). This document contains presentation content organized around the six supplied SIH sections. Use README.md for the complete project guide. This is presentation source material, not an edited PowerPoint file.
 
-> **Current position:** Application Phases 1 and 2 are complete. The team reports that its trained OCR models are ready in the separate model project. Connecting that service to this application is the next phase; application-level OCR results and end-to-end accuracy have not yet been verified.
+> **Current position:** Application Phases 1–8 are implemented. Phases 1–6 are test-verified; Phase 7 GIS and Phase 8 mock government exchange have tests deferred. The team reports that its trained OCR models are ready in the separate model project, but the live endpoint has not yet been connected or measured in this application.
 
 ## 01 · Idea title
 
@@ -64,7 +64,7 @@ Our proposed solution brings **document preservation, OCR-assisted data capture,
 ```mermaid
 flowchart TB
     User["Authorized departmental users"]
-    subgraph App["Application · implemented through Phase 2"]
+    subgraph App["Application · implemented through Phase 8"]
         UI["Next.js App Router<br/>Workspace and forms"]
         API["Next.js Route Handlers<br/>Server-only business services"]
         DB[("PostgreSQL<br/>Identity, schemas, documents and audit")]
@@ -73,27 +73,24 @@ flowchart TB
         API --> DB
         API --> Files
     end
-    subgraph Connection["Next phase · application integration"]
+    subgraph Connection["Application integration"]
         Jobs["Durable jobs and retries"]
         Adapter["Versioned model API adapter"]
         Jobs --> Adapter
     end
-    OCR["Separate OCR service<br/>Models ready · team reported"]
-    Future["Later phases<br/>Validation, review, records and GIS"]
+    OCR["Separate OCR service<br/>Models ready · live endpoint pending"]
     User --> UI
     API -.-> Jobs
     Adapter -.->|Authenticated API| OCR
     OCR -.->|Recognition results| Adapter
-    Adapter -.-> Future
     classDef ready fill:#e8f3ec,stroke:#247052,color:#173b2d;
-    classDef planned fill:#f1f4f8,stroke:#728294,color:#283848;
     classDef external fill:#fff3df,stroke:#ba8129,color:#664817;
     class UI,API,DB,Files ready;
-    class Jobs,Adapter,Future planned;
+    class Jobs,Adapter ready;
     class OCR external;
 ```
 
-Solid connections show the current application. Dashed connections show planned integration. The OCR readiness statement refers to the separate model project, not an already connected application pipeline.
+Solid connections show the implemented application and durable processing path. The dashed model connection remains pending until the authorized live endpoint is supplied. The OCR readiness statement refers to the separate model project, not a measured application pipeline.
 
 ### Methodology · document to verified record
 
@@ -107,12 +104,10 @@ flowchart LR
     D -->|Approve revision| F["5. Verified record<br/>Immutable approved version"]
     F --> G["6. Use and exchange<br/>Search, GIS and authorized APIs"]
     classDef current fill:#e8f3ec,stroke:#247052,color:#173b2d;
-    classDef future fill:#f1f4f8,stroke:#728294,color:#283848;
-    class A current;
-    class B,C,D,E,F,G future;
+    class A,B,C,D,E,F,G current;
 ```
 
-Step 1 is implemented. Steps 2–6 describe the planned application workflow. Processing will use durable jobs so that a browser disconnect or request timeout does not lose work. Results must pass identity, revision and output validation before the application accepts them.
+Steps 1–6 are implemented in the application workflow. Processing uses durable jobs so that a browser disconnect or request timeout does not lose work. Results must pass identity, revision and output validation before the application accepts them; live OCR accuracy remains unmeasured.
 
 ### Technology and delivery status
 
@@ -125,11 +120,11 @@ Step 1 is implemented. Steps 2–6 describe the planned application workflow. Pr
 | Document intake | Private local storage, PDF/image previews, metadata history | Implemented |
 | Schema configuration | Zod contracts and versioned JSON Schema | Implemented |
 | OCR models | Independently maintained model project | Ready, reported by the team |
-| Application-to-model connection | Authenticated API adapter and durable jobs | Next phase |
-| Spatial records | PostGIS and map interface | Planned |
-| Government exchange | Authorized, versioned integration adapters | Planned; no live connection |
+| Application-to-model connection | Authenticated API adapter and durable jobs | Implemented; live endpoint pending |
+| Spatial records | JSONB GeoJSON parcels and reviewed links | Implemented; PostGIS/map pending |
+| Government exchange | Versioned mock LRMS/DILRMP/database adapters | Implemented; no live connection |
 
-**Verified application baseline:** 21 PostgreSQL integration tests and 6 Chrome browser scenarios passed at Phase 2 completion. Build, TypeScript, lint and the configured-secret client scan also passed. These checks validate the application features; they are not OCR accuracy measurements.
+**Verified application baseline:** 24 PostgreSQL integration tests and 6 Chrome browser scenarios passed at Phase 6 completion, along with build, TypeScript, lint and the configured-secret client scan. Phase 7 and Phase 8 tests are deferred. These checks validate application features; they are not OCR accuracy measurements.
 
 ### Modular implementation
 
@@ -137,16 +132,16 @@ Step 1 is implemented. Steps 2–6 describe the planned application workflow. Pr
 |---|---|---|
 | Access and configuration | `identity`, `master-data`, `document-types`, `audit` | Implemented |
 | Source documents | `documents` | Implemented |
-| Model coordination | `processing` | Next phase |
-| Quality and decisions | `validation`, `duplicates`, `verification` | Planned |
-| Records and exchange | `land-records`, `gis`, `integrations` | Planned |
+| Model coordination | `processing` | Implemented |
+| Quality and decisions | `validation`, `duplicates`, `verification` | Implemented |
+| Records and exchange | `land-records`, `gis`, `integrations` | Implemented |
 | Oversight and learning | `dashboard`, `feedback` | Planned |
 
 ## 03 · Feasibility and viability
 
 ### Why the implementation is feasible
 
-The project already has a working access-controlled document workspace and PostgreSQL foundation. The separate OCR models are reported ready, allowing the next development stage to focus on API integration and reliable job handling. Module boundaries let the application and model teams develop and deploy independently.
+The project already has an access-controlled document workspace, durable processing, validation/review workflow, immutable approved records, GIS links and mock government export. The separate OCR models are reported ready; the next integration step is controlled connection to the real service. Module boundaries let the application and model teams develop and deploy independently.
 
 The current prototype runs with one Next.js process, PostgreSQL and persistent private local storage. Inference hardware and service capacity belong to the separate model deployment and must be confirmed during integration.
 

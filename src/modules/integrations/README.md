@@ -1,21 +1,14 @@
-# integrations module
+# Integrations module
 
-Status: design boundary only; no runtime implementation.
+Owns department-scoped government adapter configuration and approved-record delivery. Browser-safe contracts live in `contracts/`; authorization, transactions, mock adapters and worker logic live in `server/`.
 
-## Ownership
+## Current boundary
 
-Government/master adapters, versioned mappings and delivery attempts.
+- Supports mock LRMS, DILRMP and government database exchange only.
+- Stores append-only configuration with contract/mapping versions; no credentials or endpoints.
+- Queues an idempotent export of one exact approved record version.
+- Processes delivery through `integration_outbox` in `npm run worker:integrations`.
+- Stores attempts, history, payload hash, mock acknowledgement and audit events.
+- Rejects live mode as unsupported until authorized official integration work exists.
 
-## Public operations
-
-Lookup references and export immutable approved snapshots with acknowledgement.
-
-## Dependencies and invariants
-
-LRMS/DILRMP/cadastral mocks are labelled; no direct model responsibilities here.
-
-## Implementation layout
-
-Add contracts/ for browser-safe typed schemas, server/ for services/repositories/policies, ui/ for module components and tests/ for focused unit tests when implementing. Keep server exports separate from client contracts. Routes remain in src/app and delegate to this module.
-
-See [module structure](../../../docs/MODULE_STRUCTURE.md) and [implementation plan](../../../docs/IMPLEMENTATION_PLAN.md).
+The mock acknowledgement explicitly says that no real government system was contacted. See `docs/PHASE_8.md` for the detailed boundary and deferred verification status.

@@ -1,6 +1,6 @@
 # Architecture and technology recommendations
 
-Phase 1 status: Next.js UI/API, PostgreSQL/Drizzle identity and audit are implemented. Worker, model, storage and government adapter nodes in the diagram remain planned. Dependency versions are pinned for installed Phase 1 packages; see PHASE_1.md for the actual runtime and limits.
+Phase 8 status: Next.js UI/API, PostgreSQL/Drizzle identity, audit, documents, processing, validation, verification, approved land records, synthetic GIS parcels/links and mock government integrations are implemented. Durable processing and integration workers, private local storage and the mock/HTTP model adapter are implemented; a real model endpoint, PostGIS, interactive maps, live government exchange and production shared storage remain pending. Dependency versions are pinned in package.json; see PHASE_6.md for the verified baseline and PHASE_7.md/PHASE_8.md for the deferred-test boundaries.
 
 ## System topology
 
@@ -8,7 +8,7 @@ Phase 1 status: Next.js UI/API, PostgreSQL/Drizzle identity and audit are implem
 flowchart TD
   Browser[Authorized browser] --> Next[Next.js pages and Route Handlers]
   Next --> Modules[TypeScript business modules]
-  Modules --> DB[(PostgreSQL and PostGIS)]
+  Modules --> DB[(PostgreSQL with JSONB GeoJSON)]
   Modules --> Store[Private object storage]
   Modules --> Outbox[Transactional outbox]
   Outbox --> Worker[TypeScript durable job runner]
@@ -32,7 +32,7 @@ Next.js documents both Route Handlers and the limits of long-lived handlers on s
 | Choice | Reason | Alternative and tradeoff |
 |---|---|---|
 | Next.js + TypeScript for UI/API | User-selected unified application stack | Separate applications add deployment coordination |
-| PostgreSQL + PostGIS | User-selected relational DB plus required spatial queries | Spatial schema/migrations need care |
+| PostgreSQL with JSONB GeoJSON | Runs in the current local environment and preserves explicit CRS/provenance | PostGIS remains the future option for spatial indexes and measurements |
 | Drizzle + node-postgres | Recommended typed relational access with explicit SQL control | Prisma also viable; pick one migration owner |
 | Zod + versioned JSON Schema contracts | Validate app inputs and exchange language-neutral model schemas | Compile/configure dynamic schemas safely |
 | pg-boss durable queue | PostgreSQL-backed Node jobs avoid another infrastructure service initially | BullMQ/Redis viable later; isolate queue adapter |
@@ -49,6 +49,6 @@ Upload acceptance follows durable private object storage and metadata commit; co
 
 Model submission uses a stable request key; save remote job ID and schedule polling. Each poll is bounded and rescheduled, never an endless HTTP wait. A remote timeout after submission triggers reconciliation by key before resubmitting. Persist completed artifacts, validation state and audit together. Retain old runs when retrying.
 
-Approval atomically checks authorization, revision and blockers, creates an immutable record version and audit event, and updates the current-approved pointer. Integration delivery and feedback export read that exact approved version. Remote delivery failure cannot undo approval.
+Phase 5 approval checks authorization, expected status and blockers. In the same transaction, Phase 6 stores the immutable verification snapshot and audit event, marks the task/document approved, materializes the searchable immutable record version and updates the current-approved pointer. Integration delivery and feedback export will read that exact approved version. Remote delivery failure cannot undo approval.
 
 Use separate bounded connection pools/concurrency for web and worker. Domain services have no dependency on React or next/headers; Route Handlers and server pages build an actor context and pass it in. Worker services receive an explicit service identity. This keeps the same rules usable outside the Next.js request context.

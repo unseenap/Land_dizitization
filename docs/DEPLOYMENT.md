@@ -1,6 +1,6 @@
 # Development and deployment
 
-Phases 1 and 2 run as one Next.js UI/API process, PostgreSQL and a persistent private local storage directory. Background processing jobs, model, S3 and PostGIS remain future-phase services. File inspection uses bounded local worker threads; no model is required for upload or preview.
+Phases 1–8 run as one Next.js UI/API process, PostgreSQL, persistent private local storage and optional TypeScript worker processes. The processing worker coordinates the separate model API; the integration worker processes mock government exports. S3, PostGIS and live government endpoints remain future services. File inspection uses bounded local worker threads; no model is required for upload or preview.
 
 ## Verified environment
 
@@ -16,9 +16,11 @@ npm run db:local
 npm run db:migrate
 npm run db:seed
 npm run dev
+npm run worker:processing
+npm run worker:integrations
 ```
 
-Open http://127.0.0.1:3000. The DB script initializes an isolated loopback cluster at .local-data/postgres on port 55432, creates land_owner and restricted land_app credentials, and writes .env.local. It does not alter an existing default-port database. Rerunning starts the same cluster and preserves data. It refuses to overwrite an existing unrelated .env.local during first setup.
+Open http://127.0.0.1:3000. Run each worker command in its own long-lived terminal. The DB script initializes an isolated loopback cluster at .local-data/postgres on port 55432, creates land_owner and restricted land_app credentials, and writes .env.local. It does not alter an existing default-port database. Rerunning starts the same cluster and preserves data. It refuses to overwrite an existing unrelated .env.local during first setup.
 
 Generated demo credentials are in ignored .local-data/demo-accounts.json. Rerunning the seed adds missing fixtures and does not reset existing users or passwords. If credentials are lost, use an explicit administrator recovery process; the seed does not silently overwrite accounts.
 
@@ -60,4 +62,4 @@ Before production, configure HTTPS termination, secure environment injection, le
 
 Phase 2 uses `STORAGE_PROVIDER=local`, `STORAGE_PATH=./.local-storage`. Grant the web-process OS account access and prevent public/static directory mapping. Back up source objects and PostgreSQL together. The web deployment must include `scripts/inspect-document.mjs`, its runtime dependencies and generated `public/pdfjs` assets (copied automatically before build/dev). Ephemeral serverless filesystems and unshared multi-instance disks are unsupported. See PHASE_2.md for limits, failure cleanup and production scanning/orphan-reconciliation gaps.
 
-Future worker deployment must persist jobs independently of HTTP lifetimes. Shared object storage and authenticated model access will be required for document processing. PostGIS, model profiles, government mappings and external data-transfer authorization must be verified in their respective phases.
+Worker deployment must persist the PostgreSQL outboxes independently of HTTP lifetimes. Shared object storage and authenticated model access are required for real document processing. PostGIS, model profiles and live government mappings, credentials and data-transfer authorization must be verified before enabling anything beyond the current labelled mocks.

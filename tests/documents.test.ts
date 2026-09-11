@@ -10,10 +10,10 @@ import { NextRequest } from "next/server";
 import { migrate } from "../scripts/migrate";
 import { seed } from "../scripts/seed";
 import { samplePdf, sampleImage } from "../scripts/document-fixtures";
-import { getPool } from "../src/server/db";
+import { getDb, getPool } from "../src/server/db";
 import { storage } from "../src/server/storage";
 import { readUpload } from "../src/server/upload-http";
-import { login, createUser } from "../src/modules/identity/server/service";
+import { login, createUser, requireActor } from "../src/modules/identity/server/service";
 import {
   getMasterData,
   createArea,
@@ -42,6 +42,19 @@ import {
 import { runProcessingOnce } from "../src/modules/processing/server/worker";
 import { getValidation } from "../src/modules/validation/server/service";
 import { resolveDuplicate } from "../src/modules/duplicates/server/service";
+import {
+  approveVerification,
+  getVerificationTaskForDocument,
+  submitCorrections,
+  submitReview,
+} from "../src/modules/verification/server/service";
+import {
+  materializeApprovedRecord,
+  getLandRecord,
+  getLandRecordForDocument,
+  getLandRecordVersions,
+  listLandRecords,
+} from "../src/modules/land-records/server/service";
 const suffix = randomBytes(8).toString("hex"),
   dbName = `land_docs_test_${suffix}`,
   accountFile = `.local-data/test-accounts-${suffix}.json`,
@@ -721,4 +734,223 @@ test("phase 4 normalizes evidence-aware fields, validates master data and resolv
   const afterResolution = await getValidation(verifier, second.document.id);
   assert.equal(afterResolution.duplicates[0].status, "RESOLVED_NOT_DUPLICATE");
   assert.equal(afterResolution.duplicates[0].resolutionReason, "Reviewed source metadata and confirmed distinct records.");
+
+  const task = await getVerificationTaskForDocument(verifier, first.document.id);
+  assert.ok(task);
+  assert.equal(task.task.status, "PENDING_REVIEW");
+  assert.equal(task.run.status, "VALIDATED");
+  assert.equal(task.fields.length, 6);
+  assert.equal((await getDocument(operator, first.document.id)).status, "VERIFICATION_PENDING");
+  await assert.rejects(
+    submitReview(operator, task.task.id, {
+      expectedStatus: "PENDING_REVIEW",
+      action: "RETURN",
+      decisions: [],
+      reason: "Operator cannot return a task.",
+    }, randomUUID()),
+    denied(403),
+  );
+
+  const returned = await submitReview(verifier, task.task.id, {
+    expectedStatus: "PENDING_REVIEW",
+    action: "RETURN",
+    decisions: [],
+    reason: "Confirm the owner spelling against the source page.",
+  }, randomUUID());
+  assert.equal(returned.task.status, "RETURNED_FOR_EDIT");
+  assert.equal(returned.task.returnedReason, "Confirm the owner spelling against the source page.");
+  assert.equal((await getDocument(operator, first.document.id)).status, "RETURNED_FOR_EDIT");
+
+  const corrected = await submitCorrections(operator, task.task.id, {
+    expectedStatus: "RETURNED_FOR_EDIT",
+    corrections: [{
+      fieldKey: "owner_name",
+      value: "  Asha   Devi Verified ",
+      reason: "Corrected the owner spelling from the source register.",
+    }],
+  }, randomUUID());
+  assert.equal(corrected.task.status, "CORRECTED");
+  assert.equal(corrected.corrections[0].value, "Asha Devi Verified");
+
+  const decisions = corrected.fields.map((field) => ({
+    fieldKey: field.fieldKey,
+    decision: field.fieldKey === "owner_name" ? "ACCEPT_CORRECTION" : "ACCEPT_MODEL",
+    correctedValue: field.fieldKey === "owner_name" ? "Asha Devi Verified" : undefined,
+    reason: "Human verifier reviewed the source evidence.",
+  }));
+  const ready = await submitReview(verifier, task.task.id, {
+    expectedStatus: "CORRECTED",
+    action: "SUBMIT",
+    decisions,
+    reason: "All fields were checked against the source page.",
+  }, randomUUID());
+  assert.equal(ready.task.status, "PENDING_APPROVAL");
+  assert.equal(ready.decisions.find((decision) => decision.fieldKey === "owner_name")?.value, "Asha Devi Verified");
+
+  await assert.rejects(
+    approveVerification(verifier, task.task.id, {
+      expectedStatus: "PENDING_REVIEW",
+      reason: "Stale status must be rejected.",
+    }, randomUUID()),
+    denied(409),
+  );
+  await assert.rejects(
+    approveVerification(operator, task.task.id, {
+      expectedStatus: "PENDING_APPROVAL",
+      reason: "Operators cannot approve records.",
+    }, randomUUID()),
+    denied(403),
+  );
+
+  const approved = await approveVerification(verifier, task.task.id, {
+    expectedStatus: "PENDING_APPROVAL",
+    reason: "Source evidence, correction and duplicate review are complete.",
+  }, randomUUID());
+  assert.equal(approved.task.status, "APPROVED");
+  assert.equal(approved.approval?.reason, "Source evidence, correction and duplicate review are complete.");
+  assert.equal((approved.approval?.snapshot as { fields?: Array<{ fieldKey: string; normalizedValue: unknown }> }).fields?.find((field) => field.fieldKey === "owner_name")?.normalizedValue, "Asha Devi");
+  assert.ok(approved.history.some((entry) => entry.action === "APPROVED"));
+  assert.equal((await getDocument(operator, first.document.id)).status, "VERIFICATION_APPROVED");
+  const audited = await control.query(
+    "SELECT action FROM audit_logs WHERE entity_id=$1 AND action IN ('verification.return','verification.corrected','verification.submit','verification.approved') ORDER BY created_at",
+    [task.task.id],
+  );
+  assert.deepEqual(audited.rows.map((row) => row.action), [
+    "verification.return",
+    "verification.corrected",
+    "verification.submit",
+    "verification.approved",
+  ]);
+
+  const linkedRecord = await getLandRecordForDocument(verifier, first.document.id);
+  assert.ok(linkedRecord);
+  const records = await listLandRecords(verifier, {
+    q: "Asha Devi Verified",
+    villageId,
+    typeId: phaseType.id,
+  });
+  assert.equal(records.total, 1);
+  assert.equal(records.items[0].id, linkedRecord.id);
+  assert.equal(records.items[0].ownerName, "Asha Devi Verified");
+  assert.equal(records.items[0].surveyNumber, "syn/001");
+  assert.equal(records.items[0].plotArea, 1250.5);
+  assert.equal(records.items[0].registrationDate, "2026-01-15");
+  assert.equal(records.items[0].isMutated, true);
+
+  const record = await getLandRecord(verifier, linkedRecord.id);
+  assert.equal(record.version, 1);
+  assert.equal(record.sourceSha256, first.document.sha256);
+  assert.equal(record.artifactSha256.length, 64);
+  assert.equal(record.owners.length, 1);
+  assert.equal(record.owners[0].name, "Asha Devi Verified");
+  assert.equal(record.mutations.length, 1);
+  assert.equal(record.registration.length, 1);
+  assert.equal(record.registration[0].registrationDate, "2026-01-15");
+  assert.equal(
+    record.fields.find((field) => field.fieldKey === "owner_name")?.value,
+    "Asha Devi Verified",
+  );
+  assert.equal(
+    record.fields.find((field) => field.fieldKey === "area")?.value,
+    1250.5,
+  );
+  assert.deepEqual(
+    (await getLandRecordVersions(verifier, linkedRecord.id)).map((version) => version.version),
+    [1],
+  );
+  await assert.rejects(getLandRecord(external, linkedRecord.id), denied(404));
+  await assert.rejects(
+    control.query(
+      "UPDATE land_record_versions SET owner_name='Illegal edit' WHERE task_id=$1",
+      [task.task.id],
+    ),
+  );
+  const recordAudit = await control.query(
+    "SELECT action FROM audit_logs WHERE entity_id=$1 AND action='records.version_created'",
+    [linkedRecord.id],
+  );
+  assert.equal(recordAudit.rows.length, 1);
+
+  const pipeline = await control.query(
+    `SELECT r.job_id AS "jobId",r.artifact_id AS "artifactId",r.id AS "runId"
+     FROM verification_tasks t JOIN extraction_runs r ON r.id=t.run_id
+     WHERE t.id=$1`,
+    [task.task.id],
+  );
+  const source = pipeline.rows[0] as { jobId: string; artifactId: string; runId: string };
+  const secondJobId = String((
+    await control.query(
+      `INSERT INTO processing_jobs(document_id,department_id,document_revision,input_sha256,schema_version_id,
+         status,stage,request_id,payload_hash,tasks,language_hints,requested_model_version,remote_job_id,
+         contract_version,provider,model_name,model_version,prompt_version,attempt,max_attempts,next_attempt_at,
+         started_at,completed_at,error_code,error_message,retryable,created_by)
+       SELECT document_id,department_id,document_revision+1,input_sha256,schema_version_id,
+         'SUCCEEDED','COMPLETED',$2::uuid,payload_hash,tasks,language_hints,requested_model_version,remote_job_id,
+         contract_version,provider,model_name,model_version,prompt_version,attempt,max_attempts,next_attempt_at,
+         started_at,now(),error_code,error_message,retryable,created_by
+       FROM processing_jobs WHERE id=$1 RETURNING id`,
+      [source.jobId, randomUUID()],
+    )
+  ).rows[0].id);
+  const secondArtifactId = String((
+    await control.query(
+      `INSERT INTO processing_artifacts(job_id,kind,accepted,payload,sha256)
+       SELECT $2::uuid,kind,accepted,payload,sha256
+       FROM processing_artifacts WHERE id=$1 RETURNING id`,
+      [source.artifactId, secondJobId],
+    )
+  ).rows[0].id);
+  const secondRunId = String((
+    await control.query(
+      `INSERT INTO extraction_runs(job_id,artifact_id,document_id,department_id,schema_version_id,
+         document_revision,status,blocker_count,duplicate_count)
+       SELECT $2::uuid,$3::uuid,document_id,department_id,schema_version_id,document_revision+1,
+         'VALIDATED',0,0
+       FROM extraction_runs WHERE id=$1 RETURNING id`,
+      [source.runId, secondJobId, secondArtifactId],
+    )
+  ).rows[0].id);
+  const secondTaskId = String((
+    await control.query(
+      `INSERT INTO verification_tasks(run_id,document_id,department_id,schema_version_id,document_revision,status)
+       SELECT $2::uuid,document_id,department_id,schema_version_id,document_revision+1,'APPROVED'
+       FROM verification_tasks WHERE id=$1 RETURNING id`,
+      [task.task.id, secondRunId],
+    )
+  ).rows[0].id);
+  const actor = await requireActor(verifier);
+  const secondVersion = await getDb().transaction((tx) =>
+    materializeApprovedRecord(tx, {
+      taskId: secondTaskId,
+      actor,
+      requestId: randomUUID(),
+      snapshot: (approved.approval?.snapshot ?? {}) as Record<string, unknown>,
+    }),
+  );
+  assert.equal(secondVersion.version, 2);
+  assert.equal((await getLandRecord(verifier, linkedRecord.id)).version, 2);
+  assert.deepEqual(
+    (await getLandRecordVersions(verifier, linkedRecord.id)).map((version) => version.version),
+    [2, 1],
+  );
+
+  const duplicateTask = await getVerificationTaskForDocument(verifier, second.document.id);
+  assert.ok(duplicateTask);
+  const duplicateReady = await submitReview(verifier, duplicateTask.task.id, {
+    expectedStatus: "PENDING_REVIEW",
+    action: "SUBMIT",
+    decisions: duplicateTask.fields.map((field) => ({
+      fieldKey: field.fieldKey,
+      decision: "ACCEPT_MODEL",
+      reason: "Human verifier reviewed the corrected duplicate case.",
+    })),
+    reason: "All fields were reviewed after duplicate resolution.",
+  }, randomUUID());
+  assert.equal(duplicateReady.task.status, "PENDING_APPROVAL");
+  const duplicateApproved = await approveVerification(verifier, duplicateTask.task.id, {
+    expectedStatus: "PENDING_APPROVAL",
+    reason: "The duplicate was resolved as distinct and all fields were reviewed.",
+  }, randomUUID());
+  assert.equal(duplicateApproved.task.status, "APPROVED");
+  assert.equal(duplicateApproved.duplicates[0].status, "RESOLVED_NOT_DUPLICATE");
 });

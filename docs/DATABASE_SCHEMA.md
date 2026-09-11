@@ -10,6 +10,14 @@ Phase 3 migrations `0003_processing.sql` and `0004_processing_permissions.sql` a
 
 Phase 4 migration `0006_phase4_validation.sql` adds immutable `extraction_runs`, `extraction_fields` and `validation_findings`, plus `duplicate_candidates` for scoped signals and audited human resolution.
 
+Phase 5 migration `0007_phase5_verification.sql` adds `verification_tasks`, `verification_field_decisions`, `verification_field_corrections`, `verification_history` and `verification_approvals`. Task identity is immutable; approved tasks, decisions, corrections, history and snapshots are append-only through ordinary application DML.
+
+Phase 6 migration `0008_phase6_land_records.sql` adds `land_records`, `land_record_versions`, `landowners`, `mutation_records` and `registration_records`. One record belongs to one source document; one immutable version belongs to one approved verification task. Record versions and their child rows are append-only through ordinary application DML, and the current-version pointer is constrained to the same record.
+
+Phase 7 migration `0009_phase7_gis.sql` adds `gis_parcels`, `gis_record_links` and `gis_record_link_history`. Geometry is nullable JSONB GeoJSON with required source/target CRS, provenance and either geometry or a missing-geometry reason. Parcels are immutable; link proposals are version-pinned and reviewed once.
+
+Phase 8 migration `0010_phase8_integrations.sql` adds `integrations`, `integration_export_runs`, `integration_export_attempts`, `integration_export_history` and `integration_outbox`. Adapter configuration is append-only. An export run pins the department, record, exact record version and idempotency key; composite foreign keys prevent cross-record or cross-department references. Attempts and history are immutable; runs and outbox rows support durable worker state updates.
+
 ## Tables by module
 
 | Module | Tables and main relationships |
@@ -21,10 +29,10 @@ Phase 4 migration `0006_phase4_validation.sql` adds immutable `extraction_runs`,
 | processing | processing_jobs(document_id, revision, request/payload hashes, status, remote job/model metadata); processing_attempts(job_id, operation, attempt, status, remote ID, error); processing_outbox(job_id, submit/poll event, availability and lock); processing_artifacts(job_id, accepted/rejected payload and hash); processing_job_history(job_id, status/stage transitions) |
 | validation | extraction_runs(job/artifact/document/schema/revision/status/blockers); extraction_fields(run_id, source/normalized values, confidence, evidence); validation_findings(run_id, field/rule/status/severity/message/source) |
 | duplicates | duplicate_candidates(run_id, document/candidate IDs, score, signals, status, resolution reason/actor/time) |
-| verification | review_revisions(document_id, base_extraction_id, revision, values); verification_tasks(document_id, submitted_revision, assignee, state); verification_actions(task_id, action, actor, reason, timestamp); field_decisions(task_id, revision, field_path, decision); field_corrections(task_id, field_path, old/new, source, reason) |
-| land-records | land_records(department_id, current_approved_version_id); land_record_versions(record_id, version, document_id, review_revision_id, approved_snapshot, approver, timestamp); landowners(version_id, name, relationship, ownership); mutation_records(version_id, number, date, details); registration_records(version_id, number, date, details) |
-| gis | gis_sources(provenance, source_crs, mock/live); gis_parcels(source_id, village_id, survey_number, geometry, source_area/unit); record_parcel_links(record_version_id, parcel_id, status, reviewer, reason); parcel_link_history |
-| integrations | integrations(adapter, mode, mapping_version, configuration, secret_reference); integration_runs(destination_id, approved_version_id, idempotency_key, attempt, state, acknowledgement, error) |
+| verification | verification_tasks(run_id, document_id, department/schema/revision, status, returned reason); verification_field_decisions(task_id, field_key, decision/value/reason/actor); verification_field_corrections(task_id, field_key, value/reason/actor); verification_history(task_id, status transition, action/reason/actor); verification_approvals(task_id, immutable snapshot/reason/actor) |
+| land-records | land_records(department_id, unique document_id, display_id, current_version_id); land_record_versions(record_id, version, unique task_id, document_id, village_id, schema_version_id, approved_snapshot, standard fields, source/artifact hashes, approver); landowners(version_id, sequence, name, relationship, ownership share); mutation_records(version_id, sequence, number, date, details); registration_records(version_id, sequence, number, date, details) |
+| gis | gis_parcels(department_id, village_id, parcel_number, source name/reference, source/target CRS, nullable GeoJSON, missing reason, provenance, synthetic); gis_record_links(department_id, parcel_id, record_id, record_version_id, status, proposal/review reasons and actors); gis_record_link_history(link_id, status transition, action/reason/actor) |
+| integrations | integrations(department_id, adapter, mode, contract/mapping versions, mapping, active, notes; no credentials); integration_export_runs(integration_id, department_id, record/version IDs, idempotency key, status, payload hash, acknowledgement, attempts/errors); integration_export_attempts(run_id, operation, request hash, response/error); integration_export_history(run_id, status transition, reason, actor); integration_outbox(run_id, availability, lock, published state, attempts) |
 | feedback | feedback_examples(approved_version_id, field_path, prediction, truth, confidence, was_corrected, evidence, model/schema versions); feedback_datasets(version, scope, approval); feedback_dataset_items; evaluation_runs(dataset_id, model_version, metrics, denominators) |
 | audit/infrastructure | audit_logs(actor/service identity, action, entity/id, before/after restricted JSONB, reason, request_id, timestamp); outbox_events(type, key, payload_ref, state, attempts, available_at); pg-boss-owned queue schema |
 
@@ -32,9 +40,9 @@ Phase 4 migration `0006_phase4_validation.sql` adds immutable `extraction_runs`,
 
 Every scoped child must belong to the same department/jurisdiction as its parent. Use composite keys/FKs where practical and transactional authorization checks; guessing a UUID never grants access. Administrative hierarchy validates state → district → tehsil → village.
 
-Unique constraints: login; type/version; document/page; result/field_path; record/version; logical request_key; destination/version/mapping delivery key. A partial unique index limits each document to one active verification task. Findings refer to exactly one versioned input target. The current-approved pointer must reference a version of the same record.
+Unique constraints: login; type/version; document/page; result/field_path; verification task/run; record/version; logical request_key; destination/version/mapping delivery key. Findings refer to exactly one versioned input target. The current-approved pointer must reference a version of the same record.
 
-Approval transaction checks task/revision and all blockers, creates immutable version/owners/mutations/registration, stores actor/audit, updates current pointer and records feedback intent. Preserve unchanged verified fields as well as corrections. A repeated approval cannot create a second version.
+Phase 5 approval checks task status and all workflow blockers, stores the immutable verification snapshot and audit event, and marks the document/task approved. In the same transaction, Phase 6 materializes the immutable land-record version, owners, mutations and registration from the human-approved decision values, updates the current pointer and appends the record-version audit event. A repeated approval cannot create a second version.
 
 No cascading deletion of source evidence, approved versions or audit. Archive policy and retention need departmental decisions. Application DB roles cannot update historical approved/audit rows; this is not a cryptographic tamper-proof claim.
 

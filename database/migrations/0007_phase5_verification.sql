@@ -108,7 +108,7 @@ INSERT INTO role_permissions(role_code,permission_code)
 SELECT r.code,'verification.correct' FROM roles r WHERE r.code='operator'
 ON CONFLICT DO NOTHING;
 
-GRANT SELECT,UPDATE ON verification_tasks TO land_app;
+GRANT SELECT,INSERT,UPDATE ON verification_tasks TO land_app;
 GRANT SELECT,INSERT ON verification_field_decisions TO land_app;
 GRANT SELECT,INSERT ON verification_field_corrections TO land_app;
 GRANT SELECT,INSERT ON verification_history TO land_app;

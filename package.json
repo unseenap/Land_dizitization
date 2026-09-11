@@ -17,7 +17,8 @@
     "predev": "node scripts/prepare-pdf.mjs",
     "prebuild": "node scripts/prepare-pdf.mjs",
     "fixtures": "tsx scripts/document-fixtures.ts",
-    "worker:processing": "tsx --conditions=react-server workers/processing-worker.ts"
+    "worker:processing": "tsx --conditions=react-server workers/processing-worker.ts",
+    "worker:integrations": "tsx --conditions=react-server workers/integration-worker.ts"
   },
   "dependencies": {
     "dotenv": "17.4.2",

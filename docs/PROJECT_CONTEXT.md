@@ -22,7 +22,7 @@ Land fields include owner details, survey/khasra/khata numbers, plot area/unit, 
 
 ## Runtime ownership
 
-Next.js owns frontend, backend APIs, permissions, validation, workflow, records and integration policy. PostgreSQL stores application data; PostGIS stores spatial data. Private object storage stores files. The separately deployed model owns preprocessing, OCR/handwriting/layout recognition and learned extraction. Its implementation language and hosting can differ without changing the app.
+Next.js owns frontend, backend APIs, permissions, validation, workflow, records and integration policy. PostgreSQL stores application data, Phase 7 JSONB GeoJSON parcel fixtures and Phase 8 integration/outbox state; PostGIS remains a future spatial option. Private object storage stores files. The separately deployed model owns preprocessing, OCR/handwriting/layout recognition and learned extraction. Its implementation language and hosting can differ without changing the app.
 
 A TypeScript worker runs application jobs outside HTTP request lifetimes. It does not implement an alternative backend API or host models.
 
@@ -32,4 +32,4 @@ No actual model URL, endpoint schema, credentials, supported language list, data
 
 Use synthetic data and mock government connectors first. State/language-specific capability claims need representative fixtures. Human record approval is the proposed MVP default even when no field correction is needed. Thresholds remain configurable, not production standards.
 
-Phases 1–4 implement Next.js, PostgreSQL migrations, scoped identity/user management, audit, administrative hierarchy, versioned document types, private uploads/previews, durable model processing, evidence-aware extraction, normalization, validation and duplicate review. Real model connection, review/approval and GIS remain pending. See PHASE_4.md and CURRENT_STATE.md for the verified boundary.
+Phases 1–8 implement Next.js, PostgreSQL migrations, scoped identity/user management, audit, administrative hierarchy, versioned document types, private uploads/previews, durable model processing, evidence-aware extraction, normalization, validation, duplicate review, field verification, corrections, human approval, immutable approved land-record versions, scoped search, reviewed synthetic parcel links and idempotent mock government export. Real model connection, PostGIS-backed spatial processing and live government exchange remain pending. See PHASE_6.md for the verified baseline, PHASE_7.md/PHASE_8.md for deferred-test boundaries and CURRENT_STATE.md.

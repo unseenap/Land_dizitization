@@ -92,11 +92,11 @@ export async function seed(accountFile = ".local-data/demo-accounts.json") {
         [department, code, name],
       );
     const grants: Record<string, string[]> = {
-      administrator: ["users.manage", "audit.read", "workspace.read", "processing.read", "processing.submit", "duplicates.resolve"],
-      operator: ["workspace.read", "processing.submit", "processing.read"],
-      verifier: ["workspace.read", "processing.read", "duplicates.resolve"],
-      gis_officer: ["workspace.read"],
-      supervisor: ["workspace.read", "audit.read", "processing.read"],
+      administrator: ["users.manage", "audit.read", "workspace.read", "processing.read", "processing.submit", "duplicates.resolve", "verification.read", "verification.review", "verification.correct", "records.read", "integrations.read", "integrations.manage", "integrations.export"],
+      operator: ["workspace.read", "processing.submit", "processing.read", "verification.read", "verification.correct", "records.read"],
+      verifier: ["workspace.read", "processing.read", "duplicates.resolve", "verification.read", "verification.review", "records.read"],
+      gis_officer: ["workspace.read", "records.read"],
+      supervisor: ["workspace.read", "audit.read", "processing.read", "records.read", "integrations.read"],
     };
     for (const [role, permissions] of Object.entries(grants)) {
       await client.query(
@@ -165,6 +165,38 @@ export async function seed(accountFile = ".local-data/demo-accounts.json") {
       };
     }
     await seedDocumentFoundation(client);
+    for (const department of (
+      await client.query("SELECT id FROM departments WHERE code IN ('SYN-A','SYN-B')")
+    ).rows) {
+      const createdBy = (
+        await client.query(
+          "SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id=u.id WHERE u.department_id=$1 AND ur.role_code='administrator' ORDER BY u.created_at,u.id LIMIT 1",
+          [department.id],
+        )
+      ).rows[0]?.id ?? null;
+      for (const [adapter, name] of [
+        ["LRMS", "Synthetic LRMS mock"],
+        ["DILRMP", "Synthetic DILRMP mock"],
+        ["GOVERNMENT_DATABASE", "Synthetic government database mock"],
+      ] as const) {
+        await client.query(
+          `INSERT INTO integrations(department_id,adapter,name,mode,contract_version,mapping_version,mapping,active,notes,created_by)
+           VALUES($1,$2,$3,'MOCK','mock-v1',1,$4,true,$5,$6) ON CONFLICT DO NOTHING`,
+          [
+            department.id,
+            adapter,
+            name,
+            JSON.stringify({
+              fieldKeys: ["owner_name", "survey_number", "area"],
+              includeParcelLinks: true,
+              includeSourceDocumentId: true,
+            }),
+            "Synthetic mock only. No endpoint, credential or real government system is configured.",
+            createdBy,
+          ],
+        );
+      }
+    }
     await mkdir(".local-data", { recursive: true });
     await writeFile(accountFile, JSON.stringify(accounts, null, 2));
     await client.query("COMMIT");

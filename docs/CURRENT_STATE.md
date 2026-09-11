@@ -33,42 +33,67 @@ Last Updated: 2026-09-11.
 - Scoped duplicate candidates store source-hash, survey, owner, area and location signals; authorized verifiers/administrators can resolve candidates with audit history.
 - Document detail exposes extraction, validation findings, blockers and duplicate review; validation and duplicate-resolution APIs are available.
 - Final verification: all 24 PostgreSQL integration tests and all 6 Chrome E2E scenarios passed. Production build, TypeScript, ESLint and the client-build secret scan passed for the Phase 4 implementation.
+- Phase 5 human verification and approval: accepted model ingestion atomically creates a scoped verification task and moves its document to `VERIFICATION_PENDING`.
+- Task workflow supports pending review, return for correction, corrected resubmission, pending approval, approval and rejection; transitions require `expectedStatus`, CSRF and service-level authorization.
+- Verifiers can record `ACCEPT_MODEL` or `ACCEPT_CORRECTION` decisions for each field; operators can submit typed corrections only after a task is returned.
+- Final approval requires decisions for every field, non-null required/critical values, every duplicate resolved as not-duplicate and no record-level blockers.
+- Approval snapshots preserve document identity, source/artifact hashes, fields, evidence, findings, duplicate decisions, field decisions, corrections and the approval reason. Approved task data is database-enforced immutable.
+- Verification task APIs and a split review workbench are implemented; document detail links to its scoped task.
+- Final verification: all 24 PostgreSQL integration tests pass. TypeScript, ESLint, production build, the client-secret scan and all 6 Chrome E2E scenarios pass. Migration `0007_phase5_verification.sql` was applied to the local demo database.
+- Phase 6 approved land records: approval atomically materializes one immutable record version per approved verification task, with owners, mutation records, registration records, the current-version pointer and audit history.
+- Scoped record list, text search, village/type filters, record detail, source/verification links, all approved fields and version history are available through APIs and UI.
+- Search reads only current approved versions and enforces department/jurisdiction scope; foreign direct IDs return `404`.
+- Final verification: all 24 PostgreSQL integration tests pass. TypeScript, ESLint, production build, the client-secret scan and all 6 Chrome E2E scenarios pass. Migration `0008_phase6_land_records.sql` was applied to the local demo database.
+- Phase 7 GIS: reviewed migration `0009_phase7_gis.sql` adds immutable synthetic parcels, version-pinned record links and immutable link history.
+- Migration `0009_phase7_gis.sql` was applied to the local demo database and the synthetic parcel seed completed successfully.
+- Parcels carry explicit source/target CRS, source/provenance metadata and either JSONB GeoJSON geometry or a recorded missing-geometry reason.
+- Scoped GIS listing, missing-geometry filtering, link proposal and one-time approve/reject review are available through APIs and the workspace UI.
+- `gis.read`, `gis.link` and `gis.review` separate visibility, proposal and review authority; every mutation appends link history and audit.
+- Phase 7 tests were intentionally deferred at the user's request; do not treat this phase as verified until tests run.
+- Phase 8 integrations: reviewed migration `0010_phase8_integrations.sql` adds append-only adapter configurations, idempotent export runs, attempts, history and a transactional outbox.
+- Mock LRMS, DILRMP and government database adapters build a version-pinned envelope and return deterministic acknowledgements labelled `is_mock: true`; no network call or real government system is involved.
+- Export requests validate mapped fields, scope and exact approved version, then return `202`. The separate integration worker delivers asynchronously, stores attempts/history/audit and handles retry backoff.
+- Scoped integration configuration, export, run-list and retry APIs plus the `/integrations` workspace are implemented.
+- Migration `0010_phase8_integrations.sql` was applied and the synthetic seed completed successfully.
+- Phase 8 tests were intentionally deferred at the user's request; do not treat this phase as verified until tests run.
 
 ## Working
 
-Phases 1, 2, 3 and 4 complete. Phase 5 and later remain pending.
+Phases 1, 2, 3, 4, 5, 6, 7 and 8 complete. Phase 9 and later remain pending.
 
 ## Pending
 
-Phase 5: split viewer, field decisions, corrections, return/edit workflow and auditable final approval.
-
-Later: record verification/approval, immutable land-record versions/search, PostGIS/parcel linking, government adapters, processing dashboards and feedback/evaluation.
+Later: processing dashboards, feedback/evaluation and authorized live government exchange.
 
 ## Known issues and limits
 
-- PostGIS is not installed locally. Phase 1 uses ordinary PostgreSQL; enable PostGIS through a later reviewed GIS migration/setup step.
+- PostGIS is not installed locally. Phase 7 stores explicitly synthetic JSONB GeoJSON in ordinary PostgreSQL and does not provide spatial indexes, topology validation, area measurement or bbox queries.
 - Districts map to existing department jurisdiction scopes; descendants inherit that boundary. Administrative entries are create-only in Phase 2. Partial-scope audit readers see only their own events; full-department readers see department events.
 - Roles/permission definitions are seeded; user role assignment works, but editing permission definitions through a UI is not implemented.
 - Password-reset/rotation UX, SSO/MFA, retention cleanup, production infrastructure/security assessment and model data-sharing decisions remain pending.
-- Uploaded source documents are supported; only fictional local fixtures have been used for verification. The default mock model performs no inference, and no extraction accuracy or government connection is claimed.
+- Uploaded source documents are supported; only fictional local fixtures have been used for verification. The default mock model performs no inference. Phase 8 government adapters are in-process mocks, so no extraction accuracy or government connection is claimed.
 - Phase 2 storage is local/persistent only; no S3 adapter or ephemeral/multi-instance filesystem support. Antivirus/quarantine, OS parser isolation, crash-orphan reconciliation, encryption and backup restore verification remain production work. See PHASE_2.md for exact limits.
 - PDF/JPEG/PNG/single-page TIFF are accepted. Processing uses the mock adapter by default; a real OCR service requires HTTP model configuration and authorized input transfer. Pinned schema/location cannot be changed through the metadata editor.
 - Phase 4 normalization and duplicate policies are deterministic application defaults, not jurisdiction-certified rules. Fuzzy/transliteration matching and configurable rule administration remain future work.
+- Phase 5 has no verification queue listing; users reach a task from the scoped document detail page.
+- Phase 6 search is case-insensitive substring matching over standard indexed fields. Fuzzy/transliteration search and a repeating multi-owner/multi-mutation editor remain future work; every approved field is preserved in the immutable snapshot.
 - Windows local DB needs PostgreSQL command-line tools in PATH. The browser tests use installed Chrome.
 - Browser tests create and deactivate synthetic test accounts; their audit history is intentionally retained in the local demo database. Integration tests use a separate temporary database.
 
 ## Important decisions
 
-Next.js owns frontend and backend. Domain services remain server-only and callable from authorized server pages or API routes. The separately hosted model is not installed in this project. Drizzle owns runtime relational access; checksum-tracked reviewed SQL migrations own schema changes. Phase 3 uses the PostgreSQL outbox worker; pg-boss remains a future queue option. Phase 4 preserves model artifacts and extraction evidence immutably while keeping human duplicate decisions auditable.
+Phase 8 exports exact approved record versions through a separate durable worker to labelled in-process government mocks.
+
+Next.js owns frontend and backend. Domain services remain server-only and callable from authorized server pages or API routes. The separately hosted model is not installed in this project. Drizzle owns runtime relational access; checksum-tracked reviewed SQL migrations own schema changes. Phase 3 uses the PostgreSQL outbox worker; pg-boss remains a future queue option. Phase 4 preserves model artifacts and extraction evidence immutably while keeping human duplicate decisions auditable. Phase 5 keeps approval human-only and stores an immutable approval snapshot. Phase 6 materializes that snapshot into immutable searchable record versions. Phase 7 links those versions to synthetic parcels only through reviewed proposals.
 
 Local credentials live only in ignored .env.local and .local-data/demo-accounts.json. Migrations/seeds/tests use MIGRATION_DATABASE_URL; the app uses DATABASE_URL with restricted land_app credentials. Production should not inject the owner credential into the web process.
 
 ## Mocked / not yet integrated
 
-Departments/accounts are explicitly synthetic. The mock model adapter is implemented for contract/worker tests but is not OCR. No production model endpoint, LRMS, DILRMP, registration or cadastral service is connected.
+Departments/accounts are explicitly synthetic. The mock model adapter is implemented for contract/worker tests but is not OCR. Phase 8 LRMS/DILRMP/database adapters are mocks. No production model endpoint, LRMS, DILRMP, registration or cadastral service is connected.
 
 ## Next recommended tasks
 
-1. Align `docs/MODEL_API_CONTRACT.md` and shared fixtures with the independently developed OCR service.
-2. Configure authorized cross-host input delivery and run the worker against the real model in a controlled environment.
-3. Begin Phase 5 field-level verification, corrections and auditable approval.
+1. Add focused Phase 7 and Phase 8 PostgreSQL integration and browser tests.
+2. Align `docs/MODEL_API_CONTRACT.md` and shared fixtures with the independently developed OCR service.
+3. Configure authorized cross-host input delivery and run the worker against the real model in a controlled environment.

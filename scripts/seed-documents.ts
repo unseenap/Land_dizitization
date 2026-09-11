@@ -127,4 +127,69 @@ export async function seedDocumentFoundation(client: PoolClient) {
       );
     }
   }
+
+  for (const department of (
+    await client.query(
+      "SELECT id,code FROM departments WHERE code IN ('SYN-A','SYN-B')",
+    )
+  ).rows) {
+    const villages = (
+      await client.query(
+        `SELECT v.id,j.code
+         FROM villages v
+         JOIN tehsils t ON t.id=v.tehsil_id
+         JOIN districts d ON d.id=t.district_id
+         JOIN jurisdictions j ON j.id=d.jurisdiction_id
+         WHERE v.department_id=$1`,
+        [department.id],
+      )
+    ).rows;
+    for (const [index, village] of villages.entries()) {
+      const longitude = 77 + index * 0.05 + (department.code === "SYN-B" ? 0.8 : 0);
+      const latitude = 28 + index * 0.04 + (department.code === "SYN-B" ? 0.6 : 0);
+      for (const sequence of [1, 2, 3]) {
+        const parcelNumber = `SYN-${department.code}-${village.code}-${String(sequence).padStart(3, "0")}`;
+        const geometry =
+          sequence === 3
+            ? null
+            : JSON.stringify({
+                type: "Polygon",
+                coordinates: [
+                  [
+                    [longitude, latitude],
+                    [longitude + 0.01, latitude],
+                    [longitude + 0.01, latitude + 0.008],
+                    [longitude, latitude + 0.008],
+                    [longitude, latitude],
+                  ],
+                ],
+              });
+        await client.query(
+          `INSERT INTO gis_parcels(
+             department_id,village_id,parcel_number,source_name,source_reference,source_crs,target_crs,
+             geometry,missing_geometry_reason,provenance,synthetic
+           ) VALUES($1,$2,$3,$4,$5,'EPSG:4326','EPSG:4326',$6,$7,$8,true)
+           ON CONFLICT(department_id,village_id,parcel_number) DO NOTHING`,
+          [
+            department.id,
+            village.id,
+            parcelNumber,
+            "Synthetic cadastral fixture",
+            `synthetic-cadastral/${department.code}/${village.code}/${sequence}`,
+            geometry,
+            sequence === 3
+              ? "Synthetic fixture intentionally omits geometry to exercise missing-geometry handling."
+              : null,
+            JSON.stringify({
+              synthetic: true,
+              generatedBy: "Local seed script",
+              sourceDataset: "Synthetic cadastral fixtures",
+              coordinateGeneration: "Static fixture coordinates",
+              note: "Not a real-world cadastral boundary",
+            }),
+          ],
+        );
+      }
+    }
+  }
 }

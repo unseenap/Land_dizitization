@@ -23,6 +23,7 @@ import {
   type ProcessingJobSummary,
 } from "../contracts";
 import { ingestExtractionRun } from "@/modules/validation/server/service";
+import { createVerificationTask } from "@/modules/verification/server/service";
 
 const jobColumns = sql`j.id,j.document_id AS "documentId",j.document_revision AS "documentRevision",j.input_sha256 AS "inputSha256",j.status,j.stage,j.attempt,j.max_attempts AS "maxAttempts",j.remote_job_id AS "remoteJobId",j.provider,j.model_name AS "modelName",j.model_version AS "modelVersion",j.prompt_version AS "promptVersion",j.error_code AS "errorCode",j.error_message AS "errorMessage",j.retryable,j.created_at AS "createdAt",j.updated_at AS "updatedAt",j.completed_at AS "completedAt"`;
 
@@ -194,7 +195,7 @@ export async function ingestModelResult(jobId: string, raw: unknown) {
     const artifact = await tx.execute(sql`INSERT INTO processing_artifacts(job_id,kind,accepted,payload,sha256) VALUES(${jobId},'model_result',true,${JSON.stringify(value)}::jsonb,${payloadHash}) RETURNING id`);
     await tx.execute(sql`UPDATE processing_jobs SET status='SUCCEEDED',stage='COMPLETED',provider=${value.model.provider},model_name=${value.model.name},model_version=${value.model.version},prompt_version=${value.model.prompt_version},updated_at=now(),completed_at=now(),error_code=NULL,error_message=NULL,retryable=NULL WHERE id=${jobId}`);
     await tx.execute(sql`INSERT INTO processing_job_history(job_id,from_status,to_status,stage,reason) VALUES(${jobId},${String(job.status)},'SUCCEEDED','COMPLETED','Validated model result ingested')`);
-    await ingestExtractionRun(tx, {
+    const extraction = await ingestExtractionRun(tx, {
       jobId,
       artifactId: String(artifact.rows[0].id),
       result: value,
@@ -212,7 +213,15 @@ export async function ingestModelResult(jobId: string, raw: unknown) {
         },
       },
     });
-    await tx.execute(sql`UPDATE documents SET status='MODEL_COMPLETED' WHERE id=${job.document_id}`);
+    await createVerificationTask(tx, {
+      runId: extraction.runId,
+      documentId: String(job.document_id),
+      departmentId: String(job.department_id),
+      schemaVersionId: String(job.current_schema_version_id),
+      documentRevision: Number(job.document_revision),
+      actorId: job.created_by === null ? null : String(job.created_by),
+      requestId: String(job.request_id),
+    });
     return { accepted: true as const, result: value };
   });
 }

@@ -1,6 +1,6 @@
 # Planned demonstration
 
-Phases 1-3 can be demonstrated now: sign in with a generated synthetic account, configure a document type, upload a fixture, queue processing, run the mock worker and inspect durable job history. Follow PHASE_1.md, PHASE_2.md and PHASE_3.md for setup and credentials. The mock adapter is not OCR; approval and government/GIS integration remain planned.
+Phases 1-8 can be demonstrated now: sign in with a generated synthetic account, configure a document type, upload a fixture, queue processing, run the mock worker, inspect extraction/validation evidence, resolve duplicates, review fields, approve the task, search the materialized approved record, review a synthetic parcel link and export to a labelled mock government adapter. Follow PHASE_1.md through PHASE_8.md for setup and credentials. The mock model is not OCR and no real government integration is claimed.
 
 ## Fixtures
 
@@ -16,12 +16,12 @@ Real model fixtures must record capabilities and measured results. Mock model re
 4. Available OCR/classification/extraction stages and evidence appear.
 5. App validates fields, checks master data/duplicates and displays confidence.
 6. Verifier compares source and fields, resolves findings and records field decisions/corrections.
-7. Verifier explicitly approves the current revision; immutable record and audit are stored.
-8. Search finds the approved record by survey/owner/location.
-9. GIS officer reviews its synthetic parcel/cadastral link.
-10. Authorized user exports an approved snapshot to a labelled mock government adapter.
-11. Supervisor sees required metrics; unmeasured accuracy is shown as unavailable.
-12. Reviewed prediction/truth pairs enter the feedback dataset for evaluation and optional approved model-team export.
+7. Verifier explicitly approves the current task; immutable verification snapshot and audit are stored.
+8. Search finds the approved record by survey/owner/location and opens its version history. *(Implemented in Phase 6)*
+9. GIS officer proposes a synthetic parcel/cadastral link; verifier or administrator reviews it. *(Implemented in Phase 7)*
+10. Authorized user exports an approved snapshot to a labelled mock government adapter and starts `npm run worker:integrations` to process the outbox. *(Implemented in Phase 8)*
+11. Supervisor sees required metrics; unmeasured accuracy is shown as unavailable. *(Phase 9 target)*
+12. Reviewed prediction/truth pairs enter the feedback dataset for evaluation and optional approved model-team export. *(Phase 10 target)*
 
 ## Failure checks
 

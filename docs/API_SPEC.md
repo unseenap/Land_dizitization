@@ -1,10 +1,10 @@
 # Next.js application API
 
-Base /api/v1 uses Next.js Route Handlers. Phases 1 and 2 implement identity, audit, master-data, document-type and document intake endpoints. Phase 3 adds processing submission and status endpoints backed by durable jobs and a server-only model adapter. Phase 4 adds scoped extraction/validation reads and audited duplicate resolution. Later workflow endpoints remain proposed; the default model adapter is a labelled no-inference mock.
+Base /api/v1 uses Next.js Route Handlers. Phases 1 and 2 implement identity, audit, master-data, document-type and document intake endpoints. Phase 3 adds processing submission and status endpoints backed by durable jobs and a server-only model adapter. Phase 4 adds scoped extraction/validation reads and audited duplicate resolution. Phase 5 adds the field-review, correction and human-approval workflow. Phase 6 adds approved-record detail, history and scoped search. Phase 7 adds scoped synthetic parcels and reviewed record-to-parcel links. Phase 8 adds mock government adapter configuration and asynchronous approved-version export. Feedback and dashboard endpoints remain proposed; the default model adapter and government adapters are labelled mocks.
 
-Current payloads use camelCase: user creation accepts name, email, password, role, scopeIds; access updates accept expectedRevision, active, role, scopeIds. Login returns csrfToken; /auth/me returns user and csrfToken. Send X-CSRF-Token and matching Origin on authenticated mutations. Paginated user/document/audit collections use fixed page_size 25. Later workflow examples below are proposed contracts, not currently callable endpoints.
+Current payloads use camelCase: user creation accepts name, email, password, role, scopeIds; access updates accept expectedRevision, active, role, scopeIds. Login returns csrfToken; /auth/me returns user and csrfToken. Send X-CSRF-Token and matching Origin on authenticated mutations. Paginated user/document/audit/record/parcel/run collections use fixed page_size 25. Feedback and dashboard examples below are proposed contracts, not currently callable endpoints.
 
-## Implemented Phase 2 and Phase 3 endpoints
+## Implemented Phase 2 through Phase 8 endpoints
 
 | Endpoint | Payload / response |
 |---|---|
@@ -24,6 +24,22 @@ Current payloads use camelCase: user creation accepts name, email, password, rol
 | GET /documents/{id}/processing | Scoped latest job with status, attempts, artifacts and immutable job history |
 | GET /documents/{id}/validation | Scoped extraction fields, evidence, findings, blockers and duplicate candidates |
 | POST /duplicates/{id}/resolve | `{decision,reason}`; verifier/admin only; CSRF protected; records audited decision |
+| GET /verifications/{id} | Scoped task view with fields, evidence, findings, duplicates, decisions, corrections, history and approval |
+| POST /verifications/{id}/review | `{expectedStatus,action,decisions,reason}`; verifier/admin only; supports SUBMIT, RETURN and REJECT |
+| POST /verifications/{id}/corrections | `{expectedStatus,corrections}`; operator/admin only; valid only after RETURN |
+| POST /verifications/{id}/approve | `{expectedStatus,reason}`; verifier/admin only; enforces final approval blockers and stores immutable snapshot |
+| GET /records | `page`, `q`, optional `villageId` and `typeId`; scoped current approved records |
+| GET /records/{id} | Scoped record detail with owners, mutations, registration, approved fields, hashes and approval reason |
+| GET /records/{id}/versions | Scoped immutable version history |
+| GET /search | Alias of the scoped current approved-record search |
+| GET /gis/parcels | `page`, `q`, optional `villageId`, `geometry=all|present|missing`; scoped parcels, explicit CRS/provenance and page links |
+| POST /gis/record-links | `{parcelId,recordId,reason}`; `gis.link`; creates a `PROPOSED` link pinned to the current approved record version |
+| POST /gis/record-links/{id}/review | `{decision:APPROVED|REJECTED,reason}`; `gis.review`; transitions a proposal once |
+| GET /integrations | `integrations.read`; scoped append-only adapter configurations, without secrets |
+| POST /integrations | `integrations.manage`; `{adapter,name,mode,contractVersion,mappingVersion,mapping,notes?}`; 201 |
+| POST /integrations/{id}/exports | `integrations.export`; `{recordId,recordVersionId}`; exact approved version; 202; idempotent |
+| GET /integrations/{id}/runs | `integrations.read`; scoped run states, attempts, hashes and mock acknowledgements |
+| POST /integrations/{id}/runs/{runId}/retry | `integrations.export`; `{reason}`; requeues a failed retryable run; 202 |
 
 Upload metadata is `{title,villageId,schemaVersionId,language?,reference?,notes?}`. `villageId` is required, `schemaVersionId` is a version UUID or null. The department/uploader come from the session. Successful upload returns 201 `{document,reused:false}`; an identical retry under the same user's key returns 200 `{document,reused:true}`. Changed content under the same key returns 409. This does not deduplicate independently uploaded identical files.
 
@@ -60,17 +76,12 @@ Use expected_revision for draft/review changes; stale updates return 409. Proces
 | GET /documents/{id}/ocr | Original OCR blocks/run history |
 | GET /documents/{id}/validation | Implemented in Phase 4 |
 | POST /duplicates/{id}/resolve | Implemented in Phase 4 |
-| GET /verifications; GET /verifications/{id} | Queue/task/current revision |
-| POST /verifications/{id}/claim | Atomic assignment, expected revision |
-| PATCH /verifications/{id}/fields | Typed changes/reasons; invalidate affected approvals |
-| POST /verifications/{id}/field-decisions | Review decisions for current field paths/revision |
-| POST /verifications/{id}/submit | Operator resubmits correction; revalidation |
-| POST /verifications/{id}/verify | Officer completes current revision review |
-| POST /verifications/{id}/approve | Officer creates immutable approved record version |
-| POST /verifications/{id}/reject; POST /verifications/{id}/return | Required reason; preserve evidence |
-| GET /land-records; GET /land-records/{id}; GET /land-records/{id}/versions | Approved records and history |
+| GET /verifications/{id} | Implemented in Phase 5 |
+| POST /verifications/{id}/review | Field decisions, submit, return and reject actions |
+| POST /verifications/{id}/corrections | Operator correction submission after return |
+| POST /verifications/{id}/approve | Human approval and immutable verification snapshot |
+| GET /records; GET /records/{id}; GET /records/{id}/versions; GET /search | Implemented in Phase 6 |
 | POST /land-records/{id}/amendments | New draft from approved version |
-| GET /search | Scoped identifiers/owner/location/type/status/date queries |
 | GET /gis/parcels | Bounded bbox/location/survey GeoJSON |
 | POST /gis/record-links; POST /gis/record-links/{id}/review | GIS officer proposes/reviews links |
 | GET/POST /integrations | Admin adapter/mapping configuration, no secret echo |
@@ -90,8 +101,8 @@ Batch UI sends one bounded upload request per file and aggregates progress; an o
 
 Processing request: {expected_revision:1}, Idempotency-Key header. Response: {job_id,document_id,status:"QUEUED"}. The browser polls the application job, never the model directly.
 
-Correction: {expected_revision:3,changes:[{field_path:"survey_number",value:"123/4",reason:"Confirmed from original page 1"}]}. Field paths and values validate against the pinned type schema.
+Correction: {expectedStatus:"RETURNED_FOR_EDIT",corrections:[{fieldKey:"survey_number",value:"123/4",reason:"Confirmed from original page 1"}]}. Field keys and values validate against the pinned type schema.
 
-Approval: {expected_revision:4,reason:"Source and required fields reviewed"}. Response: {record_id,record_version:1,status:"APPROVED",integration_status:"NOT_SENT"}. Approval is an atomic service operation, never a generic status PATCH.
+Approval: {expectedStatus:"PENDING_APPROVAL",reason:"Source and required fields reviewed"}. Approval is an atomic service operation, never a generic status PATCH. It returns the task view after storing the immutable approval snapshot and materializing the searchable record version.
 
 Scope, CSRF and authorization apply equally to Route Handlers, future Server Actions and direct server-rendered service calls. OpenAPI and machine-readable runtime schemas are pending implementation.

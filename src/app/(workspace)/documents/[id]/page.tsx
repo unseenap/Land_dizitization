@@ -14,6 +14,8 @@ import { getProcessingJob } from "@/modules/processing/server/service";
 import { ProcessingControls } from "@/modules/processing/ui/processing-controls";
 import { getValidation } from "@/modules/validation/server/service";
 import { ValidationPanel } from "@/modules/validation/ui/validation-panel";
+import { getVerificationTaskForDocument } from "@/modules/verification/server/service";
+import { getLandRecordForDocument } from "@/modules/land-records/server/service";
 export default async function DocumentPage({
   params,
 }: {
@@ -32,6 +34,12 @@ export default async function DocumentPage({
   const validation = actor.permissions.includes("processing.read")
     ? await getValidation(token, id)
     : null;
+  const verificationTask = actor.permissions.includes("verification.read")
+    ? await getVerificationTaskForDocument(token, id)
+    : null;
+  const record = actor.permissions.includes("records.read")
+    ? await getLandRecordForDocument(token, id)
+    : null;
   return (
     <>
       <div className="page-heading">
@@ -44,12 +52,24 @@ export default async function DocumentPage({
             {doc.district} · {doc.village}
           </p>
         </div>
+        <div className="toolbar">
+        {verificationTask && (
+          <Link className="button" href={`/verification/${verificationTask.task.id}`}>
+            Open verification
+          </Link>
+        )}
+        {record && (
+          <Link className="button" href={`/records/${record.id}`}>
+            View record
+          </Link>
+        )}
         <a
           className="button"
           href={`/api/v1/documents/${id}/content?download=1`}
         >
           Download original
         </a>
+        </div>
       </div>
       <div className="document-grid">
         <section className="panel">
