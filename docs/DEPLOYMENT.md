@@ -1,6 +1,6 @@
 # Development and deployment
 
-Phases 1–9 run as one Next.js UI/API process, PostgreSQL, persistent private local storage and optional TypeScript worker processes. The processing worker coordinates the separate model API; the integration worker processes mock government exports. Phase 9 dashboards use scoped read queries rather than a separate fact table. S3, PostGIS and live government endpoints remain future services. File inspection uses bounded local worker threads; no model is required for upload or preview.
+Phases 1–11 run as one Next.js UI/API process, PostgreSQL, persistent private local storage and optional TypeScript worker processes. The processing worker coordinates the separate model API; the integration worker processes mock government exports. Phase 9 dashboards use scoped read queries rather than a separate fact table. Phase 10 feedback exports are synchronous, audited application responses and do not contact or retrain the model. Phase 11 records the passing local acceptance gate and reproducible `npm run acceptance` command. S3, PostGIS and live government endpoints remain future services. File inspection uses bounded local worker threads; no model is required for upload or preview.
 
 ## Verified environment
 

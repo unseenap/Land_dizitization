@@ -27,6 +27,9 @@ export default async function WorkspaceLayout({
           {actor.permissions.includes("integrations.read") && (
             <Link href="/integrations">Integrations</Link>
           )}
+          {actor.permissions.includes("feedback.read") && (
+            <Link href="/feedback">Feedback & evaluation</Link>
+          )}
           {actor.permissions.includes("documents.upload") && (
             <Link href="/documents/upload">Upload documents</Link>
           )}
@@ -44,7 +47,7 @@ export default async function WorkspaceLayout({
           )}
         </nav>
         <div className="sidebar-bottom">
-          <span className="tag dark">Phase 9 · Dashboard</span>
+          <span className="tag dark">Phase 10 · Feedback</span>
           <p>Secure access and traceable actions.</p>
         </div>
       </aside>

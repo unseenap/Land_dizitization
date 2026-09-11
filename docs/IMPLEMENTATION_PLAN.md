@@ -1,6 +1,6 @@
 # Implementation plan after design approval
 
-Phases 1 through 9 are implemented. Their working UI → Next.js API/service → PostgreSQL paths are documented in PHASE_1.md through PHASE_9.md. Phase 10 and later remain pending authorization. Each phase must preserve critical tests and update current state. Phase 7 through Phase 9 tests are intentionally deferred.
+Phases 1 through 11 are implemented. Their working UI → Next.js API/service → PostgreSQL paths are documented in PHASE_1.md through PHASE_11.md. Phase 11 acceptance passed lint, TypeScript, all integration tests, production build, client secret scanning and browser scenarios. Later work is restricted to authorized live integrations, focused test expansion and production hardening.
 
 | Phase | Modules / deliverables | Completion gate |
 |---|---|---|

@@ -29,4 +29,4 @@
 
 - Phase 9 tests, typecheck, lint, build and browser checks were intentionally deferred at the user's request.
 - The current synthetic seed has no completed processing jobs, so processed/approved values are zero until the demo workflow runs.
-- Accuracy, OCR capability and model quality measurements remain unavailable until Phase 10 feedback/evaluation data exists.
+- Accuracy, OCR capability and model quality measurements remained unavailable at Phase 9 delivery until the Phase 10 feedback workflow produced evaluated data.

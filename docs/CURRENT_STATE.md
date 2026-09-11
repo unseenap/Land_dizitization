@@ -61,14 +61,24 @@ Last Updated: 2026-09-11.
 - State/district progress uses the known scoped document denominator and is not presented as total land-record inventory completion. Extraction accuracy is explicitly not measured and remains separate from model confidence.
 - Migration `0011_phase9_dashboard.sql` was applied. A synthetic-data service check reconciled the top-level, state and district document totals after fixing a state-level duplicate-count bug.
 - Phase 9 tests were intentionally deferred at the user's request; do not treat this phase as verified until tests run.
+- Phase 10 feedback: reviewed migration `0012_phase10_feedback.sql` adds immutable approved prediction/truth examples, reviewed datasets, pinned dataset items, evaluation runs and idempotent model-team exports.
+- Dataset creation uses explicit approval date ranges and jurisdiction scope; examples preserve extraction evidence, model metadata and the latest human field decision.
+- A separate review approves or rejects each dataset. Evaluations are immutable per dataset/model version and report field accuracy with truth-labelled denominators, corrections, missing predictions and document-type/language/field segments.
+- Exports require `feedback.export`, store a deterministic payload and SHA-256, append audit events and explicitly disable automatic retraining.
+- Migration `0012_phase10_feedback.sql` was applied to the local demo database.
+- Phase 10 tests were intentionally deferred at the user's request; do not treat this phase as verified until tests run.
 
 ## Working
 
-Phases 1, 2, 3, 4, 5, 6, 7, 8 and 9 complete. Phase 10 and later remain pending.
+Phases 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 and 11 complete. Later work is limited to authorized live integrations, focused test expansion and production hardening.
 
 ## Pending
 
-Later: feedback/evaluation and authorized live government exchange.
+Later: authorized live model connection, authorized live government exchange and production hardening.
+
+## Phase 11 acceptance
+
+Completed on 2026-09-11: lint, TypeScript, all 25 PostgreSQL integration tests, production build, a 25-file client secret scan and all 6 Chrome browser scenarios passed. The reproducible command is `npm run acceptance`. The focused test also verifies the Phase 10 feedback workflow and fixes fresh-seed permissions plus dataset-summary serialization. Focused Phase 7–Phase 9 tests remain a recommended hardening task rather than an acceptance blocker.
 
 ## Known issues and limits
 
@@ -99,6 +109,6 @@ Departments/accounts are explicitly synthetic. The mock model adapter is impleme
 
 ## Next recommended tasks
 
-1. Add focused Phase 7, Phase 8 and Phase 9 PostgreSQL integration and browser tests.
+1. Add focused Phase 7, Phase 8, Phase 9 and Phase 10 PostgreSQL integration and browser tests.
 2. Align `docs/MODEL_API_CONTRACT.md` and shared fixtures with the independently developed OCR service.
 3. Configure authorized cross-host input delivery and run the worker against the real model in a controlled environment.

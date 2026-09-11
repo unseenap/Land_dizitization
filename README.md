@@ -14,7 +14,7 @@
 
 ---
 
-> **Application:** Phases 1–6 are implemented and verified; Phases 7–9 are implemented with tests deferred. **OCR:** the team reports its trained models are ready in the independent model project; connect them through the Phase 3 HTTP adapter. Government exchange is implemented as labelled in-process mocks only; live integration remains future work. Dashboard accuracy is explicitly unmeasured until Phase 10 evaluation data exists.
+> **Application:** Phases 1–6 are implemented and verified; Phases 7–10 are implemented with tests deferred. **OCR:** the team reports its trained models are ready in the independent model project; connect them through the Phase 3 HTTP adapter. Government exchange is implemented as labelled in-process mocks only; live integration remains future work. Feedback evaluation can measure field accuracy only after an approved truth dataset is generated.
 
 ## Project overview
 
@@ -38,7 +38,7 @@ The goal is to reduce repetitive transcription while keeping officers responsibl
 | GIS parcel links | Review cadastral sources and parcel links | Implemented with synthetic JSONB GeoJSON |
 | Government integrations | Export exact approved versions with acknowledgements | Mock adapters implemented; live exchange pending |
 | Dashboard | Track scoped workflow, validation, confidence, errors and jurisdiction progress | Implemented; accuracy unmeasured |
-| Feedback | Evaluate model results with reviewed truth pairs | Planned |
+| Feedback | Evaluate model results with reviewed truth pairs | Implemented; field accuracy requires an approved dataset |
 
 The supplied brief identifies problem **26018**, *Intelligent Land Record Digitization and Validation System*. The supplied SIH format names **Sanganak**, **Smart Automation**, and **Software**. Presentation-specific content is maintained separately in [SIHPPT.md](SIHPPT.md).
 
@@ -261,7 +261,7 @@ Installed versions are pinned in `package.json` and `package-lock.json`. The mod
 | 7 · GIS | Synthetic parcel data, provenance and reviewed links | Complete; tests deferred |
 | 8 · Government exchange | Mock LRMS/DILRMP/database adapters, export and acknowledgements | Complete; tests deferred |
 | 9 · Dashboard | Scoped processing, validation, confidence, errors and jurisdiction progress | Complete; tests deferred |
-| 10 · Feedback | Reviewed truth datasets and model evaluation | Planned |
+| 10 · Feedback | Reviewed truth datasets, evaluation and model-team export | Complete; tests deferred |
 | 11 · Acceptance | Complete workflow verification and deployment | Planned |
 
 **Verified Phase 6 baseline:** 24 PostgreSQL integration tests and all 6 Chrome E2E scenarios pass, including durable processing, malformed-result quarantine, evidence-aware normalization, validation, duplicate signals, task creation, correction, stale-state rejection, audited human decisions, immutable approval snapshots, atomic record materialization, owner/mutation/registration data, version history and scoped search. Production build, TypeScript, ESLint and the client-build secret scan also pass. The default mock adapter performs no OCR; these results cover application behavior, not extraction accuracy or production certification.
@@ -270,7 +270,11 @@ Installed versions are pinned in `package.json` and `package-lock.json`. The mod
 
 **Phase 8 implementation note:** LRMS, DILRMP and government database exchange use deterministic in-process mocks. Exports pin the exact approved record version, run through a transactional outbox and return acknowledgements labelled `is_mock: true`. Tests were intentionally not run for this phase.
 
-**Phase 9 implementation note:** the scoped dashboard reports workflow counts, validation findings, model confidence, processing errors and state/district progress from existing application tables. Progress uses the known document denominator, not an invented inventory total. Accuracy is displayed as not measured because Phase 10 feedback/evaluation is not implemented. Tests were intentionally not run for this phase.
+**Phase 9 implementation note:** the scoped dashboard reports workflow counts, validation findings, model confidence, processing errors and state/district progress from existing application tables. Progress uses the known document denominator, not an invented inventory total. At Phase 9 delivery, accuracy remained pending; Phase 10 now supplies it only after an approved feedback dataset is evaluated. Tests were intentionally not run for this phase.
+
+**Phase 10 implementation note:** approved field decisions become immutable prediction/truth examples, reviewed datasets and reproducible model evaluations. Exports are idempotent, hashed, audited and explicitly disable automatic retraining. Field accuracy is reported only with its truth-labelled denominator; CER/WER remain pending. Tests were intentionally not run for this phase.
+
+**Phase 11 acceptance note:** the complete local gate passed: lint, TypeScript, 25 integration tests, production build, 25-file client secret scan and 6 Chrome scenarios. Run `npm run acceptance` to reproduce it. Live model, government and production-infrastructure integration remain outside the labelled prototype boundary.
 
 No live government integration, measured end-to-end extraction accuracy or automated approval is claimed. OCR readiness refers to the team's separate model project. See [current application state](docs/CURRENT_STATE.md) and [implementation gates](docs/IMPLEMENTATION_PLAN.md).
 
@@ -299,7 +303,7 @@ Open [the local workspace](http://127.0.0.1:3000). Frontend and backend start to
 
 Generated passwords live only in ignored `.local-data/demo-accounts.json`. Configuration belongs in `.env.local`; use [.env.example](.env.example) as the reference. The fixture command creates a clearly labelled synthetic PDF and PNG under `.local-data/fixtures`.
 
-**Try the current flow:** sign in as administrator and configure a document type → sign in as operator → choose a village and upload a fixture → inspect the preview → start processing → run `npm run worker:processing` → refresh the document to inspect extracted fields, findings and duplicate candidates → open the linked verification task → return it for correction if needed → submit field decisions → approve the human-reviewed record → search the approved record and inspect its version history → sign in as GIS officer to propose a parcel link → sign in as verifier to review it → queue a mock government export and run `npm run worker:integrations` → open the dashboard to inspect scoped workflow and jurisdiction metrics. Follow the [Phase 3 walkthrough](docs/PHASE_3.md), [Phase 4 walkthrough](docs/PHASE_4.md), [Phase 5 walkthrough](docs/PHASE_5.md), [Phase 6 walkthrough](docs/PHASE_6.md), [Phase 7 walkthrough](docs/PHASE_7.md), [Phase 8 walkthrough](docs/PHASE_8.md) and [Phase 9 walkthrough](docs/PHASE_9.md).
+**Try the current flow:** sign in as administrator and configure a document type → sign in as operator → choose a village and upload a fixture → inspect the preview → start processing → run `npm run worker:processing` → refresh the document to inspect extracted fields, findings and duplicate candidates → open the linked verification task → return it for correction if needed → submit field decisions → approve the human-reviewed record → search the approved record and inspect its version history → sign in as GIS officer to propose a parcel link → sign in as verifier to review it → queue a mock government export and run `npm run worker:integrations` → open the dashboard to inspect scoped workflow and jurisdiction metrics → create, review and evaluate a feedback dataset → generate an audited model-team export. Follow the [Phase 3 walkthrough](docs/PHASE_3.md), [Phase 4 walkthrough](docs/PHASE_4.md), [Phase 5 walkthrough](docs/PHASE_5.md), [Phase 6 walkthrough](docs/PHASE_6.md), [Phase 7 walkthrough](docs/PHASE_7.md), [Phase 8 walkthrough](docs/PHASE_8.md), [Phase 9 walkthrough](docs/PHASE_9.md), [Phase 10 walkthrough](docs/PHASE_10.md) and [Phase 11 acceptance record](docs/PHASE_11.md).
 
 ### Verification commands
 
@@ -310,6 +314,7 @@ npm test
 npm run build
 npm run security:client
 npm run test:e2e
+npm run acceptance
 ```
 
 Integration tests create temporary databases and storage. Browser tests run against the local demo application and retain synthetic documents, configuration and audit history. Build before browser testing. See [deployment instructions](docs/DEPLOYMENT.md) for prerequisites and operational limitations.
@@ -330,7 +335,7 @@ Integration tests create temporary databases and storage. Browser tests run agai
 | [AI pipeline](docs/AI_PIPELINE.md) | Application processing and evaluation design |
 | [Security](docs/SECURITY.md) | Access control, source integrity and privacy |
 | [Integrations](docs/INTEGRATIONS.md) | Implemented mock government exchange and planned GIS adapters |
-| [Phase 1](docs/PHASE_1.md) / [Phase 2](docs/PHASE_2.md) / [Phase 3](docs/PHASE_3.md) / [Phase 4](docs/PHASE_4.md) / [Phase 5](docs/PHASE_5.md) / [Phase 6](docs/PHASE_6.md) / [Phase 7](docs/PHASE_7.md) / [Phase 8](docs/PHASE_8.md) / [Phase 9](docs/PHASE_9.md) | Delivered functionality and verification |
+| [Phase 1](docs/PHASE_1.md) / [Phase 2](docs/PHASE_2.md) / [Phase 3](docs/PHASE_3.md) / [Phase 4](docs/PHASE_4.md) / [Phase 5](docs/PHASE_5.md) / [Phase 6](docs/PHASE_6.md) / [Phase 7](docs/PHASE_7.md) / [Phase 8](docs/PHASE_8.md) / [Phase 9](docs/PHASE_9.md) / [Phase 10](docs/PHASE_10.md) / [Phase 11](docs/PHASE_11.md) | Delivered functionality and verification |
 | [Deployment](docs/DEPLOYMENT.md) | Environment, setup and operations |
 | [Implementation plan](docs/IMPLEMENTATION_PLAN.md) | Phase sequence and completion gates |
 | [Demo guide](docs/DEMO_GUIDE.md) | Current and planned demonstration flows |

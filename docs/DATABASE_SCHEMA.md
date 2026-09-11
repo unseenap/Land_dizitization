@@ -20,6 +20,8 @@ Phase 8 migration `0010_phase8_integrations.sql` adds `integrations`, `integrati
 
 Phase 9 migration `0011_phase9_dashboard.sql` adds permission `dashboard.read` and grants it to every existing role. Dashboard metrics are service-owned scoped read queries over existing tables; no new fact table or mutable metric store is introduced.
 
+Phase 10 migration `0012_phase10_feedback.sql` adds `feedback_examples`, `feedback_datasets`, `feedback_dataset_items`, `evaluation_runs` and `feedback_export_runs`. Examples are immutable and derived from approved verification decisions plus extraction evidence. Dataset identity and selection dates are immutable; only a pending dataset can receive review attribution. Items, evaluations and exports are append-only. Exports are idempotent per approved dataset and store a payload hash.
+
 ## Tables by module
 
 | Module | Tables and main relationships |
@@ -35,7 +37,7 @@ Phase 9 migration `0011_phase9_dashboard.sql` adds permission `dashboard.read` a
 | land-records | land_records(department_id, unique document_id, display_id, current_version_id); land_record_versions(record_id, version, unique task_id, document_id, village_id, schema_version_id, approved_snapshot, standard fields, source/artifact hashes, approver); landowners(version_id, sequence, name, relationship, ownership share); mutation_records(version_id, sequence, number, date, details); registration_records(version_id, sequence, number, date, details) |
 | gis | gis_parcels(department_id, village_id, parcel_number, source name/reference, source/target CRS, nullable GeoJSON, missing reason, provenance, synthetic); gis_record_links(department_id, parcel_id, record_id, record_version_id, status, proposal/review reasons and actors); gis_record_link_history(link_id, status transition, action/reason/actor) |
 | integrations | integrations(department_id, adapter, mode, contract/mapping versions, mapping, active, notes; no credentials); integration_export_runs(integration_id, department_id, record/version IDs, idempotency key, status, payload hash, acknowledgement, attempts/errors); integration_export_attempts(run_id, operation, request hash, response/error); integration_export_history(run_id, status transition, reason, actor); integration_outbox(run_id, availability, lock, published state, attempts) |
-| feedback | feedback_examples(approved_version_id, field_path, prediction, truth, confidence, was_corrected, evidence, model/schema versions); feedback_datasets(version, scope, approval); feedback_dataset_items; evaluation_runs(dataset_id, model_version, metrics, denominators) |
+| feedback | feedback_examples(task/run/document/schema identity, field, source/prediction/truth, confidence, corrected, evidence, model metadata); feedback_datasets(version, date range, review status); feedback_dataset_items; evaluation_runs(dataset/model, metrics, denominators); feedback_export_runs(payload, hash) |
 | audit/infrastructure | audit_logs(actor/service identity, action, entity/id, before/after restricted JSONB, reason, request_id, timestamp); outbox_events(type, key, payload_ref, state, attempts, available_at); pg-boss-owned queue schema |
 
 ## Constraints and transactions

@@ -1,6 +1,6 @@
 # Modular project structure
 
-Implemented modules: identity, audit, master-data, document-types, documents, processing, validation, duplicates, verification, land-records, gis and integrations, with Next.js routes, server-only services, safe contracts and UI. Private local storage and bounded file inspection are shared infrastructure. Other module folders remain design boundaries. The tree below describes the full target layout; PHASE_8.md lists the current government-mock boundary.
+Implemented modules: identity, audit, master-data, document-types, documents, processing, validation, duplicates, verification, land-records, gis, integrations, feedback and dashboard, with Next.js routes, server-only services, safe contracts and UI. Private local storage and bounded file inspection are shared infrastructure. The tree below describes the full target layout; PHASE_8.md lists the current government-mock boundary and PHASE_10.md lists the feedback/evaluation boundary.
 
 ## Application layout
 
@@ -64,7 +64,7 @@ Create implementation subfolders when they contain real code. Separate server ex
 | land-records | Approved snapshots, owners, mutations, registration, search | documents, gis |
 | gis | JSONB GeoJSON parcels, CRS/provenance, version-pinned record-link proposal/review | master-data, land-records, audit |
 | integrations | Mock LRMS/DILRMP/database adapters, append-only mappings, idempotent approved-version exports, acknowledgements and retries | land-records, gis, audit |
-| feedback | Approved truth pairs, dataset versions and evaluations | verification, processing, audit |
+| feedback | Approved truth pairs, reviewed datasets, evaluations and audited model-team exports | verification, processing, audit |
 | dashboard | Scoped metric queries/read models | processing, validation, feedback |
 | audit | Append-only events and authorized event reading | explicit actor context |
 
@@ -72,7 +72,7 @@ Modules call another module's public service/contract, not its private repositor
 
 ## Planned route groups
 
-UI: (auth)/login; (workspace)/dashboard, documents/upload, documents/[documentId], verification/[taskId], records/[recordId], map, audit; (workspace)/admin/users, roles, document-types, integrations, settings; optional permission-restricted feedback/evaluation page.
+UI: (auth)/login; (workspace)/dashboard, documents/upload, documents/[documentId], verification/[taskId], records/[recordId], map, feedback, audit; (workspace)/admin/users, roles, document-types, integrations, settings.
 
 API: src/app/api/v1/<resource>/route.ts and resource-specific dynamic routes. UI group parentheses do not change public URLs. Every endpoint delegates to the matching module service.
 

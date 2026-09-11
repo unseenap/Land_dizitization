@@ -66,7 +66,7 @@ export default async function Dashboard() {
             <section className="panel metric warning">
               <p>Extraction accuracy</p>
               <strong>Not measured</strong>
-              <span>Confidence is not accuracy. Evaluation begins Phase 10.</span>
+              <span>Confidence is not accuracy. Evaluate a feedback dataset.</span>
             </section>
           </div>
           <div className="overview-grid">

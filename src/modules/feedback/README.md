@@ -1,6 +1,6 @@
 # feedback module
 
-Status: design boundary only; no runtime implementation.
+Status: implemented for Phase 10.
 
 ## Ownership
 
@@ -8,11 +8,11 @@ Approved prediction/truth pairs, dataset versions and evaluations.
 
 ## Public operations
 
-Create reviewed datasets, compute quality metrics, audit authorized model-team exports.
+Create approval-derived datasets, review them, compute reproducible model evaluations and audit authorized model-team exports.
 
 ## Dependencies and invariants
 
-Include unchanged verified fields; no automatic training or unapproved data transfer.
+Examples are derived only from approved verification snapshots and immutable extraction evidence. Dataset review, evaluation and export are separate authorized actions. Accuracy uses truth-labelled fields as the denominator and never uses model confidence. Exports are idempotent, reviewed and never trigger automatic retraining.
 
 ## Implementation layout
 

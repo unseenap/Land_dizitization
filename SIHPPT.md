@@ -29,7 +29,7 @@ Next.js frontend & backend · PostgreSQL · Independent OCR model API
 
 Identity and section order follow the supplied [SIH 2026 idea presentation format](docs/SIH2026-IDEA-Presentation-Format.pptx.pdf). This document contains presentation content organized around the six supplied SIH sections. Use README.md for the complete project guide. This is presentation source material, not an edited PowerPoint file.
 
-> **Current position:** Application Phases 1–9 are implemented. Phases 1–6 are test-verified; Phase 7 GIS, Phase 8 mock government exchange and Phase 9 dashboard have tests deferred. The team reports that its trained OCR models are ready in the separate model project, but the live endpoint has not yet been connected or measured in this application.
+> **Current position:** Application Phases 1–10 are implemented. Phases 1–6 are test-verified; Phase 7 GIS, Phase 8 mock government exchange, Phase 9 dashboard and Phase 10 feedback/evaluation have tests deferred. The team reports that its trained OCR models are ready in the separate model project, but the live endpoint has not yet been connected in this application. Field accuracy is available only after an approved feedback dataset is evaluated.
 
 ## 01 · Idea title
 
@@ -64,7 +64,7 @@ Our proposed solution brings **document preservation, OCR-assisted data capture,
 ```mermaid
 flowchart TB
     User["Authorized departmental users"]
-    subgraph App["Application · implemented through Phase 9"]
+    subgraph App["Application · implemented through Phase 10"]
         UI["Next.js App Router<br/>Workspace and forms"]
         API["Next.js Route Handlers<br/>Server-only business services"]
         DB[("PostgreSQL<br/>Identity, schemas, documents and audit")]
@@ -125,7 +125,7 @@ Steps 1–6 are implemented in the application workflow. Processing uses durable
 | Government exchange | Versioned mock LRMS/DILRMP/database adapters | Implemented; no live connection |
 | Dashboard | Scoped workflow, validation, confidence, errors and jurisdiction progress | Implemented; accuracy unmeasured |
 
-**Verified application baseline:** 24 PostgreSQL integration tests and 6 Chrome browser scenarios passed at Phase 6 completion, along with build, TypeScript, lint and the configured-secret client scan. Phase 7 through Phase 9 tests are deferred. These checks validate application features; they are not OCR accuracy measurements.
+**Verified application baseline:** 24 PostgreSQL integration tests and 6 Chrome browser scenarios passed at Phase 6 completion, along with build, TypeScript, lint and the configured-secret client scan. Phase 7 through Phase 10 tests are deferred. These checks validate application features; they are not OCR accuracy measurements.
 
 ### Modular implementation
 
@@ -136,7 +136,7 @@ Steps 1–6 are implemented in the application workflow. Processing uses durable
 | Model coordination | `processing` | Implemented |
 | Quality and decisions | `validation`, `duplicates`, `verification` | Implemented |
 | Records and exchange | `land-records`, `gis`, `integrations` | Implemented |
-| Oversight and learning | `dashboard` implemented · `feedback` planned | Partially implemented |
+| Oversight and learning | `dashboard`, `feedback` | Implemented |
 
 ## 03 · Feasibility and viability
 

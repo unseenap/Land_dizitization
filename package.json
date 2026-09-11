@@ -13,6 +13,7 @@
     "db:seed": "tsx --conditions=react-server scripts/seed.ts",
     "test": "tsx --conditions=react-server --test --test-concurrency=1 tests/*.test.ts",
     "test:e2e": "playwright test",
+    "acceptance": "npm run lint && npm run typecheck && npm test && npm run build && npm run security:client && npm run test:e2e",
     "security:client": "tsx scripts/check-client-secrets.ts",
     "predev": "node scripts/prepare-pdf.mjs",
     "prebuild": "node scripts/prepare-pdf.mjs",

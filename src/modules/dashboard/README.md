@@ -8,7 +8,7 @@ Scoped read models and required metric definitions.
 
 ## Public operations
 
-Processed documents, validation status, pending verification, processing errors, model confidence and state/district workflow progress. Measured extraction accuracy remains explicitly unavailable until Phase 10 evaluation data exists.
+Processed documents, validation status, pending verification, processing errors, model confidence and state/district workflow progress. Measured extraction accuracy remains unavailable until an approved feedback dataset has been evaluated.
 
 ## Dependencies and invariants
 

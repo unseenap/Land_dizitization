@@ -415,7 +415,7 @@ export const verificationTasks = pgTable("verification_tasks", {
 
 export const verificationFieldDecisions = pgTable("verification_field_decisions", {
   id: uuid("id").primaryKey().defaultRandom(),
-  taskId: uuid("task_id").notNull().references(() => verificationTasks.id),
+  taskId: uuid("task_id").notNull().references(() => verificationApprovals.taskId),
   fieldKey: text("field_key").notNull(),
   decision: text("decision").notNull(),
   value: jsonb("value"),
@@ -637,4 +637,77 @@ export const integrationOutbox = pgTable("integration_outbox", {
   attempts: integer("attempts").notNull().default(0),
   lastError: text("last_error"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const feedbackExamples = pgTable("feedback_examples", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  taskId: uuid("task_id").notNull().references(() => verificationTasks.id),
+  runId: uuid("run_id").notNull().references(() => extractionRuns.id),
+  documentId: uuid("document_id").notNull().references(() => documents.id),
+  departmentId: uuid("department_id").notNull().references(() => departments.id),
+  schemaVersionId: uuid("schema_version_id").notNull().references(() => documentSchemaVersions.id),
+  documentType: text("document_type").notNull(),
+  language: text("language").notNull(),
+  fieldKey: text("field_key").notNull(),
+  fieldType: text("field_type").notNull(),
+  sourceValue: jsonb("source_value").notNull(),
+  prediction: jsonb("prediction"),
+  truth: jsonb("truth"),
+  truthAvailable: boolean("truth_available").notNull(),
+  confidence: doublePrecision("confidence"),
+  wasCorrected: boolean("was_corrected").notNull(),
+  evidence: jsonb("evidence").notNull().default([]),
+  modelProvider: text("model_provider").notNull(),
+  modelName: text("model_name").notNull(),
+  modelVersion: text("model_version").notNull(),
+  promptVersion: text("prompt_version").notNull(),
+  contractVersion: text("contract_version").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const feedbackDatasets = pgTable("feedback_datasets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  departmentId: uuid("department_id").notNull().references(() => departments.id),
+  version: integer("version").notNull(),
+  name: text("name").notNull(),
+  fromDate: date("from_date").notNull(),
+  toDate: date("to_date").notNull(),
+  status: text("status").notNull().default("PENDING_REVIEW"),
+  reviewReason: text("review_reason"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  reviewedBy: uuid("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const feedbackDatasetItems = pgTable(
+  "feedback_dataset_items",
+  {
+    datasetId: uuid("dataset_id").notNull().references(() => feedbackDatasets.id),
+    exampleId: uuid("example_id").notNull().references(() => feedbackExamples.id),
+    includedAt: timestamp("included_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.datasetId, table.exampleId] })],
+);
+
+export const evaluationRuns = pgTable("evaluation_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  datasetId: uuid("dataset_id").notNull().references(() => feedbackDatasets.id),
+  departmentId: uuid("department_id").notNull().references(() => departments.id),
+  modelVersion: text("model_version").notNull(),
+  metrics: jsonb("metrics").notNull(),
+  evaluatedFields: integer("evaluated_fields").notNull(),
+  correctFields: integer("correct_fields").notNull(),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const feedbackExportRuns = pgTable("feedback_export_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  datasetId: uuid("dataset_id").notNull().unique().references(() => feedbackDatasets.id),
+  departmentId: uuid("department_id").notNull().references(() => departments.id),
+  payload: jsonb("payload").notNull(),
+  payloadSha256: text("payload_sha256").notNull(),
+  exportedBy: uuid("exported_by").notNull().references(() => users.id),
+  exportedAt: timestamp("exported_at", { withTimezone: true }).notNull().defaultNow(),
 });

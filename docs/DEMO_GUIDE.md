@@ -1,6 +1,6 @@
-# Planned demonstration
+# Final demonstration
 
-Phases 1-9 can be demonstrated now: sign in with a generated synthetic account, configure a document type, upload a fixture, queue processing, run the mock worker, inspect extraction/validation evidence, resolve duplicates, review fields, approve the task, search the materialized approved record, review a synthetic parcel link, export to a labelled mock government adapter and inspect scoped dashboard metrics. Follow PHASE_1.md through PHASE_9.md for setup and credentials. The mock model is not OCR and no real government integration is claimed.
+Phases 1-11 can be demonstrated now: sign in with a generated synthetic account, configure a document type, upload a fixture, queue processing, run the mock worker, inspect extraction/validation evidence, resolve duplicates, review fields, approve the task, search the materialized approved record, review a synthetic parcel link, export to a labelled mock government adapter, inspect scoped dashboard metrics, create/review a feedback dataset, run an evaluation and generate an audited model-team export. Follow PHASE_1.md through PHASE_11.md for setup and credentials. The mock model is not OCR and no real government integration is claimed.
 
 ## Fixtures
 
@@ -21,7 +21,7 @@ Real model fixtures must record capabilities and measured results. Mock model re
 9. GIS officer proposes a synthetic parcel/cadastral link; verifier or administrator reviews it. *(Implemented in Phase 7)*
 10. Authorized user exports an approved snapshot to a labelled mock government adapter and starts `npm run worker:integrations` to process the outbox. *(Implemented in Phase 8)*
 11. Supervisor sees required metrics; unmeasured accuracy is shown as unavailable. *(Implemented in Phase 9)*
-12. Reviewed prediction/truth pairs enter the feedback dataset for evaluation and optional approved model-team export. *(Phase 10 target)*
+12. Supervisor creates a feedback dataset from approved decisions, reviews it, runs a model evaluation and generates an audited model-team export with automatic retraining disabled. *(Implemented in Phase 10)*
 
 ## Failure checks
 
