@@ -90,7 +90,29 @@ Completed on 11 September 2026 for the foundation slice.
 
 ## Next implementation slice
 
-1. Redesign the document list and document detail workspace, including filter, preview, history, extraction and validation states.
+## Step 8: Redesign the document list
+
+Completed on 11 September 2026.
+
+- Added a sticky desktop filter surface for search, village and document type with a contextual Clear action.
+- Added PDF/image icons and text-plus-icon status badges with neutral, information, warning, success and danger treatments.
+- Added the document creation date while preserving the original ID, page count, location and pinned schema information.
+- Replaced the desktop table below 768px with labeled document cards and one clear Open document action.
+- Added table-row and card `focus-within` treatments; selected rows have a supported `aria-selected` visual state for future selection workflows.
+- Added a route-specific skeleton that reserves the page heading, filter and result-table dimensions.
+- Added distinct no-data and no-filter-result empty states. Upload is offered only to authorized users, and filter recovery appears only when filters are active.
+- Verified a 390px viewport has no horizontal overflow and visually inspected desktop, mobile and zero-result layouts.
+- The focused document browser suite passed all 3 scenarios after the redesign.
+
+### Document list captures
+
+![Redesigned desktop document list](./images/ui-redesign/documents-desktop.png)
+
+![Redesigned mobile document cards](./images/ui-redesign/documents-mobile.png)
+
+## Next implementation slice
+
+1. Redesign the document detail workspace, including preview, history, extraction and validation states.
 2. Convert upload intake into a clear staged workflow with progress, per-file outcomes and recovery states.
 3. Redesign the verification workbench around evidence, field decisions, corrections and approval readiness.
 4. Redesign records, GIS, integrations and feedback around their operational tasks and status models.

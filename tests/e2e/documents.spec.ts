@@ -59,6 +59,26 @@ test("batch upload, PDF navigation, metadata history, original download and priv
   const links = await page
     .getByRole("link", { name: "Open document" })
     .evaluateAll((nodes) => nodes.map((n) => n.getAttribute("href")!));
+  await page.goto("/documents");
+  await expect(page.getByRole("table", { name: "Documents" })).toBeVisible();
+  await page.screenshot({
+    path: ".local-data/ui-documents-desktop.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".document-card-list article").first()).toBeVisible();
+  await expect(page.getByRole("table", { name: "Documents" })).toBeHidden();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.waitForTimeout(300);
+  await page.screenshot({
+    path: ".local-data/ui-documents-mobile.png",
+    fullPage: false,
+  });
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto(links[0]);
   await expect(page.getByRole("status")).toHaveText("Page rendered", {
     timeout: 20000,

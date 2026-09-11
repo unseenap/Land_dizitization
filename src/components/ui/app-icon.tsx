@@ -9,18 +9,23 @@ import {
   ClockCountdown,
   Database,
   FileArrowUp,
+  FileImage,
+  FilePdf,
   FileText,
   FolderOpen,
   GearSix,
   IconContext,
   ListChecks,
+  MagnifyingGlass,
   MapTrifold,
+  MapPin,
   ShieldCheck,
   SignOut,
   SpinnerGap,
   UsersThree,
   WarningCircle,
   XCircle,
+  X,
 } from "@phosphor-icons/react";
 import type { ComponentProps } from "react";
 
@@ -33,9 +38,13 @@ export const appIcons = {
   database: Database,
   document: FileText,
   documents: FolderOpen,
+  fileImage: FileImage,
+  filePdf: FilePdf,
   feedback: CheckCircle,
   gis: MapTrifold,
   integrations: GearSix,
+  location: MapPin,
+  search: MagnifyingGlass,
   processing: ClockCountdown,
   security: ShieldCheck,
   signOut: SignOut,
@@ -45,6 +54,7 @@ export const appIcons = {
   users: UsersThree,
   warning: WarningCircle,
   error: XCircle,
+  clear: X,
 } as const;
 
 export type AppIconName = keyof typeof appIcons;
