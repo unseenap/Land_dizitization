@@ -328,6 +328,7 @@ Integration tests create temporary databases and storage. Browser tests run agai
 | [Requirements](docs/REQUIREMENTS.md) | Capability and acceptance criteria |
 | [Architecture](docs/ARCHITECTURE.md) | Runtime boundaries and technical decisions |
 | [Module structure](docs/MODULE_STRUCTURE.md) | Ownership and dependencies |
+| [Professional UI redesign plan](docs/UI_REDESIGN_PLAN.md) | Complete shell, dashboard, component, motion, icon and responsive plan |
 | [Technical specification](docs/TECHNICAL_SPEC.md) | Permissions, workflow and application behavior |
 | [Database schema](docs/DATABASE_SCHEMA.md) | Entities, constraints and migration design |
 | [Application API](docs/API_SPEC.md) | Implemented endpoints and future contracts |

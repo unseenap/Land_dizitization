@@ -1,11 +1,16 @@
 import { defineConfig, devices } from "@playwright/test";
+import { config } from "dotenv";
+
+config({ path: ".env.local", quiet: true });
+const baseURL = process.env.APP_URL ?? "http://127.0.0.1:3000";
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
   workers: 1,
   timeout: 60000,
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL,
     trace: "off",
     screenshot: "only-on-failure",
   },
@@ -17,7 +22,7 @@ export default defineConfig({
   ],
   webServer: {
     command: "npm run start",
-    url: "http://127.0.0.1:3000/api/v1/health/live",
+    url: `${baseURL}/api/v1/health/live`,
     reuseExistingServer: true,
     timeout: 120000,
   },

@@ -24,6 +24,7 @@ Last Updated: 2026-09-11.
 - Migration 0002_documents.sql applied; Drizzle runtime mappings, synthetic hierarchy/types and generated fictional PDF/PNG fixtures added.
 - Final verification: all 21 PostgreSQL integration tests and all 6 Chrome browser scenarios passed. Build, TypeScript and ESLint passed. Client scan checked 21 JavaScript files without finding configured server secrets.
 - Desktop/mobile document screenshots inspected; upload, schema administration, metadata history, source download and lost-response retry verified through the browser.
+- A professional full-product UI redesign is planned in UI_REDESIGN_PLAN.md using accessible owned primitives, selected Magic UI and React Bits enhancements, Phosphor icons, responsive role-aware dashboards and reduced-motion behavior. This visual redesign is documented but not yet implemented.
 - Phase 3 durable processing: PostgreSQL jobs, attempts, transactional outbox, immutable artifacts and job history.
 - Server-only versioned model contract with strict mock and HTTP adapters; results are checked for identity, revision, input hash, schema, field keys, evidence pages/bounds and confidence ranges.
 - Processing submission/status APIs, document processing controls and a TypeScript worker for durable submit/poll/ingest.

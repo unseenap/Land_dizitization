@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { pageAuth } from "@/server/page-auth";
 import { csrfToken } from "@/modules/identity/server/service";
 import { LogoutButton } from "@/modules/identity/ui/logout-button";
+import { WorkspaceShell, type WorkspaceNavItem } from "./workspace-shell";
 export const dynamic = "force-dynamic";
 export default async function WorkspaceLayout({
   children,
@@ -9,68 +9,27 @@ export default async function WorkspaceLayout({
   children: React.ReactNode;
 }) {
   const { actor, token } = await pageAuth();
+  const navItems: WorkspaceNavItem[] = [
+    { href: "/dashboard", label: "Overview", icon: "dashboard", section: "Workspace" },
+    { href: "/documents", label: "Documents", icon: "documents", section: "Workspace" },
+    { href: "/records", label: "Approved records", icon: "archive", section: "Workspace" },
+    ...(actor.permissions.includes("gis.read") ? [{ href: "/gis", label: "GIS parcels", icon: "gis" as const, section: "Workspace" as const }] : []),
+    ...(actor.permissions.includes("integrations.read") ? [{ href: "/integrations", label: "Integrations", icon: "integrations" as const, section: "Workspace" as const }] : []),
+    ...(actor.permissions.includes("feedback.read") ? [{ href: "/feedback", label: "Feedback and evaluation", icon: "feedback" as const, section: "Workspace" as const }] : []),
+    ...(actor.permissions.includes("documents.upload") ? [{ href: "/documents/upload", label: "Upload documents", icon: "upload" as const, section: "Workspace" as const }] : []),
+    ...(actor.permissions.includes("master-data.manage") ? [{ href: "/admin/master-data", label: "Administrative areas", icon: "building" as const, section: "Administration" as const }] : []),
+    ...(actor.permissions.includes("document-types.manage") ? [{ href: "/admin/document-types", label: "Document types", icon: "document" as const, section: "Administration" as const }] : []),
+    ...(actor.permissions.includes("users.manage") ? [{ href: "/admin/users", label: "Users & access", icon: "users" as const, section: "Administration" as const }] : []),
+    ...(actor.permissions.includes("audit.read") ? [{ href: "/audit", label: "Audit history", icon: "audit" as const, section: "Administration" as const }] : []),
+  ];
   return (
-    <div className="workspace">
-      <aside className="sidebar">
-        <Link href="/dashboard" className="brand">
-          <span className="brand-mark">LR</span>
-          <span>
-            Land Records<span className="brand-sub">Department workspace</span>
-          </span>
-        </Link>
-        <p className="nav-label">Workspace</p>
-        <nav aria-label="Main navigation">
-          <Link href="/dashboard">Overview</Link>
-          <Link href="/documents">Documents</Link>
-          <Link href="/records">Records</Link>
-          {actor.permissions.includes("gis.read") && <Link href="/gis">GIS parcels</Link>}
-          {actor.permissions.includes("integrations.read") && (
-            <Link href="/integrations">Integrations</Link>
-          )}
-          {actor.permissions.includes("feedback.read") && (
-            <Link href="/feedback">Feedback & evaluation</Link>
-          )}
-          {actor.permissions.includes("documents.upload") && (
-            <Link href="/documents/upload">Upload documents</Link>
-          )}
-          {actor.permissions.includes("master-data.manage") && (
-            <Link href="/admin/master-data">Administrative areas</Link>
-          )}
-          {actor.permissions.includes("document-types.manage") && (
-            <Link href="/admin/document-types">Document types</Link>
-          )}
-          {actor.permissions.includes("users.manage") && (
-            <Link href="/admin/users">Users & access</Link>
-          )}
-          {actor.permissions.includes("audit.read") && (
-            <Link href="/audit">Audit history</Link>
-          )}
-        </nav>
-        <div className="sidebar-bottom">
-          <span className="tag dark">Phase 10 · Feedback</span>
-          <p>Secure access and traceable actions.</p>
-        </div>
-      </aside>
-      <div className="workspace-body">
-        <header className="topbar">
-          <div>
-            <p className="department">{actor.departmentName}</p>
-            <span className="muted small">
-              Synthetic development environment
-            </span>
-          </div>
-          <div className="account">
-            <span>{actor.name}</span>
-            <LogoutButton csrfToken={csrfToken(token!)} />
-          </div>
-        </header>
-        <main id="main" className="page-content">
-          {children}
-        </main>
-        <footer className="workspace-footer">
-          SIH26018 · Authorized departmental access
-        </footer>
-      </div>
-    </div>
+    <WorkspaceShell
+      departmentName={actor.departmentName}
+      actorName={actor.name}
+      navItems={navItems}
+      logout={<LogoutButton csrfToken={csrfToken(token!)} />}
+    >
+      {children}
+    </WorkspaceShell>
   );
 }

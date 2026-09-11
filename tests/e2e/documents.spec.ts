@@ -220,7 +220,7 @@ test("interrupted upload response can be retried without duplicate and invalid i
   const tree = await (await page.request.get("/api/v1/master-data")).json();
   const response = await page.request.post("/api/v1/documents/upload", {
     headers: {
-      origin: "http://127.0.0.1:3000",
+      origin: new URL(page.url()).origin,
       "x-csrf-token": me.csrfToken,
       "idempotency-key": randomUUID(),
     },

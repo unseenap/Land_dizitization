@@ -2,6 +2,10 @@ import Link from "next/link";
 import { pageAuth } from "@/server/page-auth";
 import { getDashboardSummary } from "@/modules/dashboard/server/service";
 import type { DashboardSummary } from "@/modules/dashboard/contracts";
+import { AppIcon } from "@/components/ui/app-icon";
+import { AnimatedContent } from "@/components/react-bits/animated-content";
+import { CountUp } from "@/components/react-bits/count-up";
+import { BentoCard, BentoGrid } from "@/components/magicui/bento-grid";
 
 function percent(value: number | null) {
   return value === null ? "—" : `${Math.round(value * 100)}%`;
@@ -28,47 +32,36 @@ export default async function Dashboard() {
             Scoped workflow metrics, validation status and jurisdiction progress.
           </p>
         </div>
-        <span className="tag">Phase 9 · Metrics available</span>
+        <span className="tag"><span className="status-dot" />Live scoped metrics</span>
       </div>
       {summary ? (
         <>
-          <div className="metric-grid">
-            <section className="panel metric">
-              <p>Documents processed</p>
-              <strong>{summary.workflow.documentsProcessed}</strong>
-              <span>
-                of {summary.workflow.documentsTotal} ·{" "}
-                {percent(summary.workflow.processedRate)}
-              </span>
-            </section>
-            <section className="panel metric">
-              <p>Pending verification</p>
-              <strong>{summary.workflow.documentsPendingVerification}</strong>
-              <span>Includes returned-for-edit documents</span>
-            </section>
-            <section className="panel metric">
-              <p>Approved records</p>
-              <strong>{summary.workflow.documentsApproved}</strong>
-              <span>{percent(summary.workflow.approvedRate)} of documents</span>
-            </section>
-            <section className="panel metric">
-              <p>Processing failures</p>
-              <strong>{summary.workflow.documentsProcessingFailed}</strong>
-              <span>{summary.errors.length} error type(s) recorded</span>
-            </section>
-            <section className="panel metric">
-              <p>Average model confidence</p>
+          <BentoGrid className="dashboard-bento">
+            <AnimatedContent><BentoCard title="Documents processed" eyebrow="Workflow" icon={<AppIcon name="processing" size={22} />} className="metric metric-featured">
+              <strong><CountUp value={summary.workflow.documentsProcessed} /></strong>
+              <span>of {summary.workflow.documentsTotal} · {percent(summary.workflow.processedRate)}</span>
+              <div className="progress-track" aria-label={`${percent(summary.workflow.processedRate)} processed`}><span style={{ width: percent(summary.workflow.processedRate) }} /></div>
+            </BentoCard></AnimatedContent>
+            <AnimatedContent delay={0.04}><BentoCard title="Pending verification" eyebrow="Review queue" icon={<AppIcon name="users" size={22} />} className="metric">
+              <strong><CountUp value={summary.workflow.documentsPendingVerification} /></strong>
+              <span>Includes records returned for correction</span>
+            </BentoCard></AnimatedContent>
+            <AnimatedContent delay={0.08}><BentoCard title="Approved records" eyebrow="Human approved" icon={<AppIcon name="success" size={22} />} className="metric metric-success">
+              <strong><CountUp value={summary.workflow.documentsApproved} /></strong>
+              <span>{percent(summary.workflow.approvedRate)} of workflow documents</span>
+            </BentoCard></AnimatedContent>
+            <AnimatedContent delay={0.12}><BentoCard title="Processing failures" eyebrow="Needs attention" icon={<AppIcon name="error" size={22} />} className="metric metric-danger">
+              <strong><CountUp value={summary.workflow.documentsProcessingFailed} /></strong>
+              <span>{summary.errors.length} recorded error type(s)</span>
+            </BentoCard></AnimatedContent>
+            <AnimatedContent delay={0.16}><BentoCard title="Model confidence" eyebrow="Current average" icon={<AppIcon name="dashboard" size={22} />} className="metric">
               <strong>{confidence(summary.confidence.averageConfidence)}</strong>
-              <span>
-                {summary.confidence.lowConfidenceFields} low-confidence fields
-              </span>
-            </section>
-            <section className="panel metric warning">
-              <p>Extraction accuracy</p>
-              <strong>Not measured</strong>
-              <span>Confidence is not accuracy. Evaluate a feedback dataset.</span>
-            </section>
-          </div>
+              <span>{summary.confidence.lowConfidenceFields} low-confidence fields</span>
+            </BentoCard></AnimatedContent>
+            <AnimatedContent delay={0.2}><BentoCard title="Not measured" eyebrow="Extraction accuracy" icon={<AppIcon name="warning" size={22} />} className="metric metric-warning">
+              <p className="metric-note">Confidence is not accuracy. Use an approved feedback dataset to measure it.</p>
+            </BentoCard></AnimatedContent>
+          </BentoGrid>
           <div className="overview-grid">
             <section className="panel">
               <h2>Validation status</h2>

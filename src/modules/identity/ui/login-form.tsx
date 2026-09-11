@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/shared/api-client";
+import { EnvelopeSimple, LockKey, ArrowRight, SpinnerGap } from "@phosphor-icons/react";
 export function LoginForm() {
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -27,26 +28,26 @@ export function LoginForm() {
         }
       }}
     >
-      <label>
+      <label className="input-label">
         Email address
-        <input
+        <span className="input-control"><EnvelopeSimple size={18} aria-hidden="true" /><input
           type="email"
           name="email"
           autoComplete="username"
           placeholder="name@department.gov.in"
           required
           maxLength={254}
-        />
+        /></span>
       </label>
-      <label>
+      <label className="input-label">
         Password
-        <input
+        <span className="input-control"><LockKey size={18} aria-hidden="true" /><input
           type="password"
           name="password"
           autoComplete="current-password"
           required
           maxLength={128}
-        />
+        /></span>
       </label>
       {error && (
         <p role="alert" className="error-message">
@@ -54,7 +55,7 @@ export function LoginForm() {
         </p>
       )}
       <button disabled={busy} className="button primary" type="submit">
-        {busy ? "Signing in…" : "Sign in"}
+        {busy ? <><SpinnerGap className="spin" size={18} />Signing in</> : <>Sign in <ArrowRight size={18} /></>}
       </button>
     </form>
   );
