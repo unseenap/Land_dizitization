@@ -1,6 +1,6 @@
 # Architecture and technology recommendations
 
-Phase 8 status: Next.js UI/API, PostgreSQL/Drizzle identity, audit, documents, processing, validation, verification, approved land records, synthetic GIS parcels/links and mock government integrations are implemented. Durable processing and integration workers, private local storage and the mock/HTTP model adapter are implemented; a real model endpoint, PostGIS, interactive maps, live government exchange and production shared storage remain pending. Dependency versions are pinned in package.json; see PHASE_6.md for the verified baseline and PHASE_7.md/PHASE_8.md for the deferred-test boundaries.
+Phase 9 status: Next.js UI/API, PostgreSQL/Drizzle identity, audit, documents, processing, validation, verification, approved land records, synthetic GIS parcels/links, mock government integrations and scoped dashboard metrics are implemented. Durable processing and integration workers, private local storage and the mock/HTTP model adapter are implemented; a real model endpoint, PostGIS, interactive maps, measured extraction accuracy, live government exchange and production shared storage remain pending. Dependency versions are pinned in package.json; see PHASE_6.md for the verified baseline and PHASE_7.md through PHASE_9.md for the deferred-test boundaries.
 
 ## System topology
 

@@ -1,6 +1,6 @@
 # Implementation plan after design approval
 
-Phases 1 through 8 are implemented. Their working UI → Next.js API/service → PostgreSQL paths are documented in PHASE_1.md through PHASE_8.md. Phase 9 and later remain pending authorization. Each phase must preserve critical tests and update current state. Phase 7 and Phase 8 tests are intentionally deferred.
+Phases 1 through 9 are implemented. Their working UI → Next.js API/service → PostgreSQL paths are documented in PHASE_1.md through PHASE_9.md. Phase 10 and later remain pending authorization. Each phase must preserve critical tests and update current state. Phase 7 through Phase 9 tests are intentionally deferred.
 
 | Phase | Modules / deliverables | Completion gate |
 |---|---|---|

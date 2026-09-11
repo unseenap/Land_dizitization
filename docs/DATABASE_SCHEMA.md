@@ -18,6 +18,8 @@ Phase 7 migration `0009_phase7_gis.sql` adds `gis_parcels`, `gis_record_links` a
 
 Phase 8 migration `0010_phase8_integrations.sql` adds `integrations`, `integration_export_runs`, `integration_export_attempts`, `integration_export_history` and `integration_outbox`. Adapter configuration is append-only. An export run pins the department, record, exact record version and idempotency key; composite foreign keys prevent cross-record or cross-department references. Attempts and history are immutable; runs and outbox rows support durable worker state updates.
 
+Phase 9 migration `0011_phase9_dashboard.sql` adds permission `dashboard.read` and grants it to every existing role. Dashboard metrics are service-owned scoped read queries over existing tables; no new fact table or mutable metric store is introduced.
+
 ## Tables by module
 
 | Module | Tables and main relationships |

@@ -44,7 +44,7 @@ export default async function WorkspaceLayout({
           )}
         </nav>
         <div className="sidebar-bottom">
-          <span className="tag dark">Phase 8 · Integrations</span>
+          <span className="tag dark">Phase 9 · Dashboard</span>
           <p>Secure access and traceable actions.</p>
         </div>
       </aside>

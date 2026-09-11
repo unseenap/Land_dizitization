@@ -488,6 +488,35 @@ input::placeholder {
   grid-template-columns: 1.1fr 1fr;
   gap: 24px;
 }
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.metric {
+  padding: 20px;
+}
+.metric p {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.metric strong {
+  display: block;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.8px;
+}
+.metric span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 8px;
+}
+.metric.warning strong {
+  color: #95520e;
+}
 .panel {
   background: #fff;
   border: 1px solid var(--border);
@@ -695,6 +724,9 @@ pre {
   .overview-grid {
     grid-template-columns: 1fr;
   }
+  .metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
   .account > span {
     display: none;
   }
@@ -760,6 +792,9 @@ pre {
   }
   .panel {
     padding: 20px;
+  }
+  .metric-grid {
+    grid-template-columns: 1fr 1fr;
   }
   .page-heading h1 {
     font-size: 25px;

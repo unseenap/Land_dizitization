@@ -14,7 +14,7 @@
 
 ---
 
-> **Application:** Phases 1–6 are implemented and verified; Phases 7–8 are implemented with tests deferred. **OCR:** the team reports its trained models are ready in the independent model project; connect them through the Phase 3 HTTP adapter. Government exchange is implemented as labelled in-process mocks only; live integration remains future work.
+> **Application:** Phases 1–6 are implemented and verified; Phases 7–9 are implemented with tests deferred. **OCR:** the team reports its trained models are ready in the independent model project; connect them through the Phase 3 HTTP adapter. Government exchange is implemented as labelled in-process mocks only; live integration remains future work. Dashboard accuracy is explicitly unmeasured until Phase 10 evaluation data exists.
 
 ## Project overview
 
@@ -37,6 +37,7 @@ The goal is to reduce repetitive transcription while keeping officers responsibl
 | Records and search | Retrieve approved records, owners, history and scoped search | Implemented |
 | GIS parcel links | Review cadastral sources and parcel links | Implemented with synthetic JSONB GeoJSON |
 | Government integrations | Export exact approved versions with acknowledgements | Mock adapters implemented; live exchange pending |
+| Dashboard | Track scoped workflow, validation, confidence, errors and jurisdiction progress | Implemented; accuracy unmeasured |
 | Feedback | Evaluate model results with reviewed truth pairs | Planned |
 
 The supplied brief identifies problem **26018**, *Intelligent Land Record Digitization and Validation System*. The supplied SIH format names **Sanganak**, **Smart Automation**, and **Software**. Presentation-specific content is maintained separately in [SIHPPT.md](SIHPPT.md).
@@ -259,7 +260,7 @@ Installed versions are pinned in `package.json` and `package-lock.json`. The mod
 | 6 · Records | Approved versions, owners/mutations and scoped search | Complete |
 | 7 · GIS | Synthetic parcel data, provenance and reviewed links | Complete; tests deferred |
 | 8 · Government exchange | Mock LRMS/DILRMP/database adapters, export and acknowledgements | Complete; tests deferred |
-| 9 · Dashboard | Scoped processing and quality metrics | Planned |
+| 9 · Dashboard | Scoped processing, validation, confidence, errors and jurisdiction progress | Complete; tests deferred |
 | 10 · Feedback | Reviewed truth datasets and model evaluation | Planned |
 | 11 · Acceptance | Complete workflow verification and deployment | Planned |
 
@@ -268,6 +269,8 @@ Installed versions are pinned in `package.json` and `package-lock.json`. The mod
 **Phase 7 implementation note:** synthetic parcels use JSONB GeoJSON with explicit CRS/provenance and missing-geometry handling. Link proposals pin exact approved record versions and require separate review. Tests were intentionally not run for this phase.
 
 **Phase 8 implementation note:** LRMS, DILRMP and government database exchange use deterministic in-process mocks. Exports pin the exact approved record version, run through a transactional outbox and return acknowledgements labelled `is_mock: true`. Tests were intentionally not run for this phase.
+
+**Phase 9 implementation note:** the scoped dashboard reports workflow counts, validation findings, model confidence, processing errors and state/district progress from existing application tables. Progress uses the known document denominator, not an invented inventory total. Accuracy is displayed as not measured because Phase 10 feedback/evaluation is not implemented. Tests were intentionally not run for this phase.
 
 No live government integration, measured end-to-end extraction accuracy or automated approval is claimed. OCR readiness refers to the team's separate model project. See [current application state](docs/CURRENT_STATE.md) and [implementation gates](docs/IMPLEMENTATION_PLAN.md).
 
@@ -296,7 +299,7 @@ Open [the local workspace](http://127.0.0.1:3000). Frontend and backend start to
 
 Generated passwords live only in ignored `.local-data/demo-accounts.json`. Configuration belongs in `.env.local`; use [.env.example](.env.example) as the reference. The fixture command creates a clearly labelled synthetic PDF and PNG under `.local-data/fixtures`.
 
-**Try the current flow:** sign in as administrator and configure a document type → sign in as operator → choose a village and upload a fixture → inspect the preview → start processing → run `npm run worker:processing` → refresh the document to inspect extracted fields, findings and duplicate candidates → open the linked verification task → return it for correction if needed → submit field decisions → approve the human-reviewed record → search the approved record and inspect its version history → sign in as GIS officer to propose a parcel link → sign in as verifier to review it → queue a mock government export and run `npm run worker:integrations`. Follow the [Phase 3 walkthrough](docs/PHASE_3.md), [Phase 4 walkthrough](docs/PHASE_4.md), [Phase 5 walkthrough](docs/PHASE_5.md), [Phase 6 walkthrough](docs/PHASE_6.md), [Phase 7 walkthrough](docs/PHASE_7.md) and [Phase 8 walkthrough](docs/PHASE_8.md).
+**Try the current flow:** sign in as administrator and configure a document type → sign in as operator → choose a village and upload a fixture → inspect the preview → start processing → run `npm run worker:processing` → refresh the document to inspect extracted fields, findings and duplicate candidates → open the linked verification task → return it for correction if needed → submit field decisions → approve the human-reviewed record → search the approved record and inspect its version history → sign in as GIS officer to propose a parcel link → sign in as verifier to review it → queue a mock government export and run `npm run worker:integrations` → open the dashboard to inspect scoped workflow and jurisdiction metrics. Follow the [Phase 3 walkthrough](docs/PHASE_3.md), [Phase 4 walkthrough](docs/PHASE_4.md), [Phase 5 walkthrough](docs/PHASE_5.md), [Phase 6 walkthrough](docs/PHASE_6.md), [Phase 7 walkthrough](docs/PHASE_7.md), [Phase 8 walkthrough](docs/PHASE_8.md) and [Phase 9 walkthrough](docs/PHASE_9.md).
 
 ### Verification commands
 
@@ -327,7 +330,7 @@ Integration tests create temporary databases and storage. Browser tests run agai
 | [AI pipeline](docs/AI_PIPELINE.md) | Application processing and evaluation design |
 | [Security](docs/SECURITY.md) | Access control, source integrity and privacy |
 | [Integrations](docs/INTEGRATIONS.md) | Implemented mock government exchange and planned GIS adapters |
-| [Phase 1](docs/PHASE_1.md) / [Phase 2](docs/PHASE_2.md) / [Phase 3](docs/PHASE_3.md) / [Phase 4](docs/PHASE_4.md) / [Phase 5](docs/PHASE_5.md) / [Phase 6](docs/PHASE_6.md) / [Phase 7](docs/PHASE_7.md) / [Phase 8](docs/PHASE_8.md) | Delivered functionality and verification |
+| [Phase 1](docs/PHASE_1.md) / [Phase 2](docs/PHASE_2.md) / [Phase 3](docs/PHASE_3.md) / [Phase 4](docs/PHASE_4.md) / [Phase 5](docs/PHASE_5.md) / [Phase 6](docs/PHASE_6.md) / [Phase 7](docs/PHASE_7.md) / [Phase 8](docs/PHASE_8.md) / [Phase 9](docs/PHASE_9.md) | Delivered functionality and verification |
 | [Deployment](docs/DEPLOYMENT.md) | Environment, setup and operations |
 | [Implementation plan](docs/IMPLEMENTATION_PLAN.md) | Phase sequence and completion gates |
 | [Demo guide](docs/DEMO_GUIDE.md) | Current and planned demonstration flows |

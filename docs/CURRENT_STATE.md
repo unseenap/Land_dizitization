@@ -56,14 +56,19 @@ Last Updated: 2026-09-11.
 - Scoped integration configuration, export, run-list and retry APIs plus the `/integrations` workspace are implemented.
 - Migration `0010_phase8_integrations.sql` was applied and the synthetic seed completed successfully.
 - Phase 8 tests were intentionally deferred at the user's request; do not treat this phase as verified until tests run.
+- Phase 9 dashboard: reviewed migration `0011_phase9_dashboard.sql` adds the scoped `dashboard.read` permission for every existing role.
+- The dashboard service/API/UI report documents processed, pending verification, approved records, processing failures, latest validation findings, current confidence, grouped processing errors, and state/district workflow progress.
+- State/district progress uses the known scoped document denominator and is not presented as total land-record inventory completion. Extraction accuracy is explicitly not measured and remains separate from model confidence.
+- Migration `0011_phase9_dashboard.sql` was applied. A synthetic-data service check reconciled the top-level, state and district document totals after fixing a state-level duplicate-count bug.
+- Phase 9 tests were intentionally deferred at the user's request; do not treat this phase as verified until tests run.
 
 ## Working
 
-Phases 1, 2, 3, 4, 5, 6, 7 and 8 complete. Phase 9 and later remain pending.
+Phases 1, 2, 3, 4, 5, 6, 7, 8 and 9 complete. Phase 10 and later remain pending.
 
 ## Pending
 
-Later: processing dashboards, feedback/evaluation and authorized live government exchange.
+Later: feedback/evaluation and authorized live government exchange.
 
 ## Known issues and limits
 
@@ -94,6 +99,6 @@ Departments/accounts are explicitly synthetic. The mock model adapter is impleme
 
 ## Next recommended tasks
 
-1. Add focused Phase 7 and Phase 8 PostgreSQL integration and browser tests.
+1. Add focused Phase 7, Phase 8 and Phase 9 PostgreSQL integration and browser tests.
 2. Align `docs/MODEL_API_CONTRACT.md` and shared fixtures with the independently developed OCR service.
 3. Configure authorized cross-host input delivery and run the worker against the real model in a controlled environment.

@@ -1,7 +1,23 @@
 import Link from "next/link";
 import { pageAuth } from "@/server/page-auth";
+import { getDashboardSummary } from "@/modules/dashboard/server/service";
+import type { DashboardSummary } from "@/modules/dashboard/contracts";
+
+function percent(value: number | null) {
+  return value === null ? "—" : `${Math.round(value * 100)}%`;
+}
+
+function confidence(value: number | null) {
+  return value === null ? "Unavailable" : `${Math.round(value * 100)}%`;
+}
+
 export default async function Dashboard() {
-  const { actor } = await pageAuth();
+  const { actor, token } = await pageAuth();
+  const canReadDashboard = actor.permissions.includes("dashboard.read");
+  const summary: DashboardSummary | null = canReadDashboard
+    ? await getDashboardSummary(token)
+    : null;
+
   return (
     <>
       <div className="page-heading">
@@ -9,11 +25,203 @@ export default async function Dashboard() {
           <p className="eyebrow">Workspace overview</p>
           <h1>Welcome, {actor.name}.</h1>
           <p className="muted">
-            Preserve source documents, manage your team and review activity.
+            Scoped workflow metrics, validation status and jurisdiction progress.
           </p>
         </div>
-        <span className="tag">Document intake available</span>
+        <span className="tag">Phase 9 · Metrics available</span>
       </div>
+      {summary ? (
+        <>
+          <div className="metric-grid">
+            <section className="panel metric">
+              <p>Documents processed</p>
+              <strong>{summary.workflow.documentsProcessed}</strong>
+              <span>
+                of {summary.workflow.documentsTotal} ·{" "}
+                {percent(summary.workflow.processedRate)}
+              </span>
+            </section>
+            <section className="panel metric">
+              <p>Pending verification</p>
+              <strong>{summary.workflow.documentsPendingVerification}</strong>
+              <span>Includes returned-for-edit documents</span>
+            </section>
+            <section className="panel metric">
+              <p>Approved records</p>
+              <strong>{summary.workflow.documentsApproved}</strong>
+              <span>{percent(summary.workflow.approvedRate)} of documents</span>
+            </section>
+            <section className="panel metric">
+              <p>Processing failures</p>
+              <strong>{summary.workflow.documentsProcessingFailed}</strong>
+              <span>{summary.errors.length} error type(s) recorded</span>
+            </section>
+            <section className="panel metric">
+              <p>Average model confidence</p>
+              <strong>{confidence(summary.confidence.averageConfidence)}</strong>
+              <span>
+                {summary.confidence.lowConfidenceFields} low-confidence fields
+              </span>
+            </section>
+            <section className="panel metric warning">
+              <p>Extraction accuracy</p>
+              <strong>Not measured</strong>
+              <span>Confidence is not accuracy. Evaluation begins Phase 10.</span>
+            </section>
+          </div>
+          <div className="overview-grid">
+            <section className="panel">
+              <h2>Validation status</h2>
+              <dl className="detail-list">
+                <div>
+                  <dt>Validated</dt>
+                  <dd>{summary.validation.validatedRuns}</dd>
+                </div>
+                <div>
+                  <dt>Blocked</dt>
+                  <dd>{summary.validation.blockedRuns}</dd>
+                </div>
+                <div>
+                  <dt>Pass findings</dt>
+                  <dd>{summary.validation.passFindings}</dd>
+                </div>
+                <div>
+                  <dt>Warnings</dt>
+                  <dd>{summary.validation.warningFindings}</dd>
+                </div>
+                <div>
+                  <dt>Failures</dt>
+                  <dd>{summary.validation.failFindings}</dd>
+                </div>
+                <div>
+                  <dt>Not checked</dt>
+                  <dd>{summary.validation.notCheckedFindings}</dd>
+                </div>
+              </dl>
+            </section>
+            <section className="panel">
+              <h2>Error statistics</h2>
+              {summary.errors.length ? (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Code</th>
+                        <th>Count</th>
+                        <th>Last message</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.errors.map((error) => (
+                        <tr key={error.code}>
+                          <td>{error.code}</td>
+                          <td>{error.count}</td>
+                          <td>{error.lastMessage ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="empty">No processing errors are recorded.</p>
+              )}
+            </section>
+          </div>
+          <section>
+            <div className="section-title">
+              <h2>State-wise progress</h2>
+              <span className="tag neutral">
+                Workflow ratios · not inventory completion
+              </span>
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>State</th>
+                    <th>Documents</th>
+                    <th>Processed</th>
+                    <th>Pending</th>
+                    <th>Approved</th>
+                    <th>Failed</th>
+                    <th>Processed share</th>
+                    <th>Approved share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary.states.map((state) => (
+                    <tr key={state.id}>
+                      <td>{state.name}</td>
+                      <td>{state.documents}</td>
+                      <td>{state.processed}</td>
+                      <td>{state.pendingVerification}</td>
+                      <td>{state.approved}</td>
+                      <td>{state.processingFailed}</td>
+                      <td>{percent(state.processedRate)}</td>
+                      <td>{percent(state.approvedRate)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!summary.states.length && (
+                <p className="empty">No states are assigned to your scope.</p>
+              )}
+            </div>
+          </section>
+          <section>
+            <div className="section-title">
+              <h2>District-wise progress</h2>
+              <span className="tag neutral">Known document denominator</span>
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>District</th>
+                    <th>State</th>
+                    <th>Documents</th>
+                    <th>Processed</th>
+                    <th>Pending</th>
+                    <th>Approved</th>
+                    <th>Failed</th>
+                    <th>Approved share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary.districts.map((district) => (
+                    <tr key={district.id}>
+                      <td>{district.name}</td>
+                      <td>{district.stateName ?? "—"}</td>
+                      <td>{district.documents}</td>
+                      <td>{district.processed}</td>
+                      <td>{district.pendingVerification}</td>
+                      <td>{district.approved}</td>
+                      <td>{district.processingFailed}</td>
+                      <td>{percent(district.approvedRate)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!summary.districts.length && (
+                <p className="empty">No districts are assigned to your scope.</p>
+              )}
+            </div>
+          </section>
+          <p className="muted small">
+            Generated {new Date(summary.generatedAt).toLocaleString()} for{" "}
+            {summary.scope.departmentName} across{" "}
+            {summary.scope.jurisdictionCount} jurisdiction(s). Progress shares
+            compare workflow documents; no total land-record inventory
+            denominator has been supplied.
+          </p>
+        </>
+      ) : (
+        <section className="next-phase">
+          <span className="tag neutral">Dashboard unavailable</span>
+          <h2>Your role does not have dashboard access.</h2>
+          <p>Contact an administrator if you need scoped workflow metrics.</p>
+        </section>
+      )}
       <div className="overview-grid">
         <section className="panel">
           <h2>Your access</h2>
@@ -25,13 +233,13 @@ export default async function Dashboard() {
             <div>
               <dt>Role</dt>
               <dd>
-                {actor.roles.map((r) => r.replaceAll("_", " ")).join(", ")}
+                {actor.roles.map((role) => role.replaceAll("_", " ")).join(", ")}
               </dd>
             </div>
             <div>
               <dt>Jurisdiction</dt>
               <dd>
-                {actor.scopes.map((s) => s.name).join(", ") ||
+                {actor.scopes.map((scope) => scope.name).join(", ") ||
                   "No jurisdiction assigned"}
               </dd>
             </div>
@@ -42,16 +250,28 @@ export default async function Dashboard() {
           </dl>
         </section>
         <section className="panel">
-          <h2>Available in this phase</h2>
+          <h2>Workflow shortcuts</h2>
           <div className="action-list">
             <Link href="/documents">
               <strong>
                 Document workspace <span aria-hidden="true">→</span>
               </strong>
-              <span>
-                Browse preserved originals, previews and metadata history.
-              </span>
+              <span>Browse preserved originals, previews and processing.</span>
             </Link>
+            <Link href="/records">
+              <strong>
+                Approved records <span aria-hidden="true">→</span>
+              </strong>
+              <span>Search current approved record versions.</span>
+            </Link>
+            {actor.permissions.includes("verification.read") && (
+              <Link href="/verification">
+                <strong>
+                  Verification queue <span aria-hidden="true">→</span>
+                </strong>
+                <span>Review fields, evidence and duplicate decisions.</span>
+              </Link>
+            )}
             {actor.permissions.includes("users.manage") && (
               <Link href="/admin/users">
                 <strong>
@@ -65,27 +285,12 @@ export default async function Dashboard() {
                 <strong>
                   Audit history <span aria-hidden="true">→</span>
                 </strong>
-                <span>Review sign-ins and user access changes.</span>
+                <span>Review sign-ins and access changes.</span>
               </Link>
             )}
-            <div>
-              <strong>Secure session</strong>
-              <span>
-                Your account is authenticated. Sign out when finished.
-              </span>
-            </div>
           </div>
         </section>
       </div>
-      <section className="next-phase">
-        <span className="tag neutral">Coming in later phases</span>
-        <h2>Processing and verification come next.</h2>
-        <p>
-          Documents can now be uploaded and inspected. OCR, extraction,
-          verification, maps and processing statistics will be introduced in
-          later phases. No model results or accuracy measurements are claimed.
-        </p>
-      </section>
     </>
   );
 }

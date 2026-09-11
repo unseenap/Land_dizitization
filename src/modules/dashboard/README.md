@@ -1,6 +1,6 @@
 # dashboard module
 
-Status: design boundary only; no runtime implementation.
+Status: Phase 9 implemented for scoped workflow metrics.
 
 ## Ownership
 
@@ -8,11 +8,11 @@ Scoped read models and required metric definitions.
 
 ## Public operations
 
-Processed, measured accuracy, validation, pending, errors and state/district progress.
+Processed documents, validation status, pending verification, processing errors, model confidence and state/district workflow progress. Measured extraction accuracy remains explicitly unavailable until Phase 10 evaluation data exists.
 
 ## Dependencies and invariants
 
-Metrics come from module read contracts/views; no fake accuracy or unknown denominators.
+Metrics are computed from scoped application tables. Processed and approved shares use the known document denominator, not an invented total land-record inventory. Confidence is always reported separately from accuracy.
 
 ## Implementation layout
 

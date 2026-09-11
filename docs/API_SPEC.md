@@ -1,10 +1,10 @@
 # Next.js application API
 
-Base /api/v1 uses Next.js Route Handlers. Phases 1 and 2 implement identity, audit, master-data, document-type and document intake endpoints. Phase 3 adds processing submission and status endpoints backed by durable jobs and a server-only model adapter. Phase 4 adds scoped extraction/validation reads and audited duplicate resolution. Phase 5 adds the field-review, correction and human-approval workflow. Phase 6 adds approved-record detail, history and scoped search. Phase 7 adds scoped synthetic parcels and reviewed record-to-parcel links. Phase 8 adds mock government adapter configuration and asynchronous approved-version export. Feedback and dashboard endpoints remain proposed; the default model adapter and government adapters are labelled mocks.
+Base /api/v1 uses Next.js Route Handlers. Phases 1 and 2 implement identity, audit, master-data, document-type and document intake endpoints. Phase 3 adds processing submission and status endpoints backed by durable jobs and a server-only model adapter. Phase 4 adds scoped extraction/validation reads and audited duplicate resolution. Phase 5 adds the field-review, correction and human-approval workflow. Phase 6 adds approved-record detail, history and scoped search. Phase 7 adds scoped synthetic parcels and reviewed record-to-parcel links. Phase 8 adds mock government adapter configuration and asynchronous approved-version export. Phase 9 adds scoped dashboard metrics. Feedback endpoints remain proposed; the default model adapter and government adapters are labelled mocks.
 
-Current payloads use camelCase: user creation accepts name, email, password, role, scopeIds; access updates accept expectedRevision, active, role, scopeIds. Login returns csrfToken; /auth/me returns user and csrfToken. Send X-CSRF-Token and matching Origin on authenticated mutations. Paginated user/document/audit/record/parcel/run collections use fixed page_size 25. Feedback and dashboard examples below are proposed contracts, not currently callable endpoints.
+Current payloads use camelCase: user creation accepts name, email, password, role, scopeIds; access updates accept expectedRevision, active, role, scopeIds. Login returns csrfToken; /auth/me returns user and csrfToken. Send X-CSRF-Token and matching Origin on authenticated mutations. Paginated user/document/audit/record/parcel/run collections use fixed page_size 25. Feedback examples below are proposed contracts, not currently callable endpoints.
 
-## Implemented Phase 2 through Phase 8 endpoints
+## Implemented Phase 2 through Phase 9 endpoints
 
 | Endpoint | Payload / response |
 |---|---|
@@ -87,6 +87,7 @@ Use expected_revision for draft/review changes; stale updates return 409. Proces
 | GET/POST /integrations | Admin adapter/mapping configuration, no secret echo |
 | POST /integrations/{id}/exports | Explicit export permission + approved version → 202 delivery |
 | GET /integrations/{id}/runs; POST /integrations/{id}/runs/{runId}/retry | Delivery acknowledgement and retry |
+| GET /dashboard/summary | `dashboard.read`; scoped workflow, validation, confidence, error, state and district metrics; accuracy explicitly `NOT_MEASURED` |
 | GET /feedback/datasets; POST /feedback/datasets | Authorized approved-truth dataset selection |
 | POST /feedback/datasets/{id}/export | Explicit model-feedback export permission |
 | GET /feedback/evaluations | Metrics with dataset/model/version/denominator |
